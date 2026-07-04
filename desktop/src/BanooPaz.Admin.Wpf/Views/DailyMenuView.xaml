@@ -1,0 +1,44 @@
+<UserControl x:Class="BanooPaz.Admin.Wpf.Views.DailyMenuView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             FlowDirection="RightToLeft">
+    <Grid>
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+        <Border Background="White" CornerRadius="8" Padding="12" Margin="0,0,0,10">
+            <WrapPanel VerticalAlignment="Center">
+                <TextBlock Text="تاریخ منو" VerticalAlignment="Center" Margin="4"/><DatePicker SelectedDate="{Binding SelectedDate}" Width="145" Margin="4"/>
+                <CheckBox Content="منو باز است" IsChecked="{Binding IsOpen}" VerticalAlignment="Center" Margin="14,4"/>
+                <TextBlock Text="یادداشت" VerticalAlignment="Center" Margin="4"/><TextBox Text="{Binding Note}" Width="260" Padding="6" Margin="4"/>
+                <Button Content="بارگذاری / تازه‌سازی" Command="{Binding RefreshCommand}"/>
+                <Button Content="ذخیره منو" Command="{Binding SaveMenuCommand}"/>
+            </WrapPanel>
+        </Border>
+        <StackPanel Grid.Row="1" Margin="0,0,0,8">
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="#B00020" TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding SuccessMessage}" Foreground="#287A3D" TextWrapping="Wrap"/>
+        </StackPanel>
+        <Border Grid.Row="2" Background="White" CornerRadius="8" Padding="10" Margin="0,0,0,10">
+            <DockPanel LastChildFill="False">
+                <TextBlock Text="انتخاب غذا" VerticalAlignment="Center" Margin="4"/>
+                <ComboBox ItemsSource="{Binding AvailableFoods}" SelectedItem="{Binding SelectedFoodToAdd}"
+                          DisplayMemberPath="Name" Width="240" Margin="4"/>
+                <Button Content="افزودن به منو" Command="{Binding AddSelectedFoodCommand}"/>
+            </DockPanel>
+        </Border>
+        <DataGrid Grid.Row="3" ItemsSource="{Binding Items}" IsReadOnly="False" CanUserAddRows="False">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="غذا" Binding="{Binding FoodName}" IsReadOnly="True" Width="*"/>
+                <DataGridTextColumn Header="قیمت امروز" Binding="{Binding Price}" Width="130"/>
+                <DataGridTextColumn Header="ظرفیت پرس" Binding="{Binding CapacityPortions}" Width="120"/>
+                <DataGridTextColumn Header="فروخته‌شده" Binding="{Binding SoldPortions}" IsReadOnly="True" Width="110"/>
+                <DataGridTextColumn Header="باقی‌مانده" Binding="{Binding RemainingPortions}" IsReadOnly="True" Width="110"/>
+                <DataGridCheckBoxColumn Header="فعال؟" Binding="{Binding IsAvailable}" Width="75"/>
+                <DataGridTemplateColumn Header="عملیات" Width="120">
+                    <DataGridTemplateColumn.CellTemplate><DataTemplate>
+                        <Button Content="تغییر وضعیت" Command="{Binding DataContext.ToggleItemAvailabilityCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}"/>
+                    </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>

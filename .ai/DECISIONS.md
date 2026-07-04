@@ -14,5 +14,12 @@
   - قیمه
 - Domain enums are stored as integers for now.
 - Order items snapshot food name, unit price, and total price so historical orders remain stable.
+- Orders start in `PendingConfirmation`; submission does not reserve or reduce capacity.
+- Admin confirmation increases `SoldPortions`, while cancellation after confirmation restores those portions.
+- Order confirmation and cancellation persist order status, history, timestamps, and capacity in one save operation.
+- `Microsoft.OpenApi` is not used in this project.
+- Swagger/OpenAPI tooling is not required for the MVP unless explicitly requested later.
 - Daily menu date is unique.
 - A food can appear only once in a given daily menu.
+- The Mini App temporarily reads today's menu from the admin daily-menu endpoint until a public `/api/menus/today` endpoint is added.
+- Telegram WebApp user data may prefill an order but remains untrusted until backend `initData` validation is implemented.

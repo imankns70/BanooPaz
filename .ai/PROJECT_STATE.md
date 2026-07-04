@@ -1,6 +1,6 @@
 # Project state
 
-- Status: Food and daily menu admin APIs
+- Status: Food, daily menu, and order APIs
 - Brand: BanooPaz / بانوپز
 - City: Andimeshk / اندیمشک
 - Sales model: Per portion
@@ -8,10 +8,22 @@
 - Admin: WPF desktop application communicating only with the API
 - Customer: React + TypeScript + Vite Telegram Mini App
 - Architecture: Pragmatic Clean Architecture with the API as the central integration point
-- Current scope: Domain and persistence foundation plus admin-facing Food and Daily Menu APIs
+- Current scope: Domain and persistence foundation plus Food, Daily Menu, and Order APIs
 - MVP foods: زرشک‌پلو با مرغ، قورمه‌سبزی، ماکارونی، قیمه
 - MVP domain entities have been created for customers, addresses, foods, daily menus, orders, admins, and settings.
 - EF Core persistence foundation and the `InitialBanooPazSchema` migration have been added.
 - The four initial foods are seeded with fixed creation timestamps and placeholder prices.
 - Food admin APIs have been implemented.
 - Daily menu admin APIs have been implemented with additive item upserts.
+- Customer order submission has been implemented.
+- Admin order listing, details, and status management have been implemented.
+- Daily menu capacity changes only when an order is confirmed or a confirmed order is cancelled.
+- The WPF admin now has a configured HTTP API client for order operations.
+- The WPF orders screen supports date/status filtering, automatic refresh, and order selection.
+- The WPF order details panel shows items and status history and provides status actions through the API.
+- Investigated and removed the optional ASP.NET Core OpenAPI dependency that introduced the `Microsoft.OpenApi` vulnerability warning.
+- WPF Foods management screen added.
+- WPF Daily Menu management screen added.
+- WPF navigation between Orders, Foods, and Daily Menu added.
+- Telegram Mini App MVP customer UI added.
+- Customer can view menu, manage cart, and submit order.

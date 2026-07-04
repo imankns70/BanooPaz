@@ -19,6 +19,7 @@ public static class DependencyInjection
         services.AddDbContext<BanooPazDbContext>(options => options.UseSqlServer(connectionString));
         services.AddScoped<IFoodRepository, FoodRepository>();
         services.AddScoped<IDailyMenuRepository, DailyMenuRepository>();
+        services.AddScoped<ICustomerRepository, CustomerRepository>();
         services.AddScoped<IOrderRepository, OrderRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 

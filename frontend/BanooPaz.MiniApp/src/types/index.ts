@@ -1,0 +1,21 @@
+export enum PaymentMethod { Cash = 1, CardToCard = 2, Online = 3 }
+export enum DeliveryMethod { Pickup = 1, Delivery = 2 }
+export enum OrderStatus { PendingConfirmation = 1, Confirmed = 2, Preparing = 3, Ready = 4, Delivered = 5, Cancelled = 6 }
+
+export interface DailyMenuDto { id: number; menuDate: string; isOpen: boolean; note?: string | null; items: DailyMenuItemDto[] }
+export interface DailyMenuItemDto {
+  id: number; foodId: number; foodName: string; foodDescription?: string | null; imageUrl?: string | null
+  price: number; capacityPortions: number; soldPortions: number; remainingPortions: number; isAvailable: boolean
+}
+export interface CreateOrderItemRequest { dailyMenuItemId: number; quantity: number }
+export interface CreateOrderRequest {
+  telegramUserId?: number | null; telegramUsername?: string | null; fullName: string; phoneNumber: string
+  city: string; addressLine: string; addressDescription?: string | null; paymentMethod: PaymentMethod
+  deliveryMethod: DeliveryMethod; customerNote?: string | null; items: CreateOrderItemRequest[]
+}
+export interface OrderDto {
+  id: number; orderNumber: string; status: OrderStatus; subtotalAmount: number; deliveryFee: number; totalAmount: number
+}
+export interface CartItem {
+  dailyMenuItemId: number; foodName: string; unitPrice: number; quantity: number; remainingPortions: number
+}

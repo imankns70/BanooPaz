@@ -19,7 +19,10 @@ public sealed class DailyMenuRepository(BanooPazDbContext dbContext) : IDailyMen
             .SingleOrDefaultAsync(menu => menu.Id == id, cancellationToken);
 
     public Task<DailyMenuItem?> GetItemByIdAsync(int id, CancellationToken cancellationToken = default) =>
-        dbContext.DailyMenuItems.SingleOrDefaultAsync(item => item.Id == id, cancellationToken);
+        dbContext.DailyMenuItems
+            .Include(item => item.DailyMenu)
+            .Include(item => item.Food)
+            .SingleOrDefaultAsync(item => item.Id == id, cancellationToken);
 
     public async Task AddAsync(DailyMenu dailyMenu, CancellationToken cancellationToken = default) =>
         await dbContext.DailyMenus.AddAsync(dailyMenu, cancellationToken);

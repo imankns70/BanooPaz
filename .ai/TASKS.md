@@ -12,8 +12,19 @@
 - [x] Add seed foods
 - [x] Implement Food API endpoints
 - [x] Implement Daily Menu API endpoints
-- [ ] Implement Order API endpoints
-- [ ] Implement WPF API client
-- [ ] Implement WPF Foods screen
-- [ ] Implement WPF Daily Menu screen
-- [ ] Implement Telegram Mini App menu page
+- [x] Implement Order API endpoints
+- [x] Implement WPF API client
+- [ ] Implement WPF dashboard screen
+- [x] Implement WPF order list screen
+- [x] Implement WPF order detail/status screen
+- [x] Remove Microsoft.OpenApi dependency/warning
+- [x] Implement WPF Foods screen
+- [x] Implement WPF Daily Menu screen
+- [x] Implement Mini App daily menu page
+- [x] Implement Mini App cart
+- [x] Implement Mini App order submission
+- [ ] Add public customer menu endpoint `/api/menus/today`
+- [ ] Add Telegram initData validation
+- [ ] Add Worker notification queue
+- [ ] Add Telegram order/status notifications
+- [ ] Add image generation/import workflow for food photos
