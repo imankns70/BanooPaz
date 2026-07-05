@@ -1,5 +1,4 @@
 using BanooPaz.Contracts.Orders;
-using BanooPaz.Domain.Enums;
 
 namespace BanooPaz.Admin.Wpf.Services.Api;
 

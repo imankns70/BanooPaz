@@ -32,10 +32,22 @@ public partial class App : Application
                     client.BaseAddress = new Uri(baseUrl));
                 services.AddHttpClient<IDailyMenusApiClient, DailyMenusApiClient>(client =>
                     client.BaseAddress = new Uri(baseUrl));
+                services.AddHttpClient<IAuthApiClient, AuthApiClient>(client =>
+                    client.BaseAddress = new Uri(baseUrl));
+                services.AddSingleton<LoginViewModel>();
                 services.AddSingleton<OrdersViewModel>();
                 services.AddSingleton<FoodsViewModel>();
                 services.AddSingleton<DailyMenuViewModel>();
-                services.AddSingleton<MainViewModel>();
+                services.AddSingleton(provider =>
+                {
+                    var mainViewModel = new MainViewModel(
+                        provider.GetRequiredService<LoginViewModel>(),
+                        provider.GetRequiredService<OrdersViewModel>(),
+                        provider.GetRequiredService<FoodsViewModel>(),
+                        provider.GetRequiredService<DailyMenuViewModel>());
+                    mainViewModel.Login.LoginSucceeded += (_, _) => mainViewModel.MarkAuthenticated();
+                    return mainViewModel;
+                });
                 services.AddSingleton<MainWindow>();
             })
             .Build();

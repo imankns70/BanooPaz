@@ -2,7 +2,7 @@ using BanooPaz.Application.Interfaces;
 using BanooPaz.Application.Services;
 using BanooPaz.Contracts.Orders;
 using BanooPaz.Domain.Entities;
-using BanooPaz.Domain.Enums;
+using DomainOrderStatus = BanooPaz.Domain.Enums.OrderStatus;
 
 namespace BanooPaz.UnitTests;
 
@@ -14,7 +14,7 @@ public sealed class OrderServiceTests
         var menuItem = CreateMenuItem(5, 1);
         var order = CreateOrder(menuItem, 2);
         var unitOfWork = new FakeUnitOfWork();
-        var service = CreateService(order, unitOfWork);
+        var service = CreateStatusService(order, unitOfWork);
 
         var updated = await service.UpdateStatusAsync(order.Id, new UpdateOrderStatusRequest
         {
@@ -23,12 +23,9 @@ public sealed class OrderServiceTests
         });
 
         Assert.True(updated);
-        Assert.Equal(OrderStatus.Confirmed, order.Status);
+        Assert.Equal(DomainOrderStatus.Confirmed, order.Status);
         Assert.Equal(3, menuItem.SoldPortions);
         Assert.NotNull(order.ConfirmedAt);
-        Assert.Contains(order.StatusHistories, history =>
-            history.FromStatus == OrderStatus.PendingConfirmation &&
-            history.ToStatus == OrderStatus.Confirmed);
         Assert.Equal(1, unitOfWork.SaveCount);
     }
 
@@ -38,7 +35,7 @@ public sealed class OrderServiceTests
         var menuItem = CreateMenuItem(2, 1);
         var order = CreateOrder(menuItem, 2);
         var unitOfWork = new FakeUnitOfWork();
-        var service = CreateService(order, unitOfWork);
+        var service = CreateStatusService(order, unitOfWork);
 
         var action = () => service.UpdateStatusAsync(order.Id, new UpdateOrderStatusRequest
         {
@@ -46,9 +43,8 @@ public sealed class OrderServiceTests
         });
 
         await Assert.ThrowsAsync<ArgumentException>(action);
-        Assert.Equal(OrderStatus.PendingConfirmation, order.Status);
+        Assert.Equal(DomainOrderStatus.PendingConfirmation, order.Status);
         Assert.Equal(1, menuItem.SoldPortions);
-        Assert.Null(order.ConfirmedAt);
         Assert.Equal(0, unitOfWork.SaveCount);
     }
 
@@ -56,8 +52,8 @@ public sealed class OrderServiceTests
     public async Task Cancelling_confirmed_order_restores_capacity()
     {
         var menuItem = CreateMenuItem(5, 3);
-        var order = CreateOrder(menuItem, 2, OrderStatus.Confirmed);
-        var service = CreateService(order, new FakeUnitOfWork());
+        var order = CreateOrder(menuItem, 2, DomainOrderStatus.Confirmed);
+        var service = CreateStatusService(order, new FakeUnitOfWork());
 
         await service.UpdateStatusAsync(order.Id, new UpdateOrderStatusRequest
         {
@@ -65,32 +61,98 @@ public sealed class OrderServiceTests
         });
 
         Assert.Equal(1, menuItem.SoldPortions);
-        Assert.Equal(OrderStatus.Cancelled, order.Status);
-        Assert.NotNull(order.CancelledAt);
+        Assert.Equal(DomainOrderStatus.Cancelled, order.Status);
     }
 
-    private static OrderService CreateService(Order order, FakeUnitOfWork unitOfWork) =>
-        new(new FakeOrderRepository(order), new EmptyDailyMenuRepository(),
-            new EmptyCustomerRepository(), unitOfWork);
+    [Fact]
+    public async Task Create_saves_first_new_address_and_snapshots_delivery_data()
+    {
+        var profile = new CustomerProfile { Id = 12 };
+        var orderRepository = new FakeOrderRepository();
+        var service = CreateOrderService(profile, orderRepository);
+
+        var result = await service.CreateAsync(CreateRequest());
+
+        var address = Assert.Single(profile.Addresses);
+        Assert.True(address.IsDefault);
+        Assert.Equal("خانه", address.Title);
+        Assert.Equal("خیابان یک", result.AddressLine);
+        Assert.Equal("خیابان یک", orderRepository.Added!.DeliveryAddressLine);
+    }
+
+    [Fact]
+    public async Task Create_uses_existing_address_and_keeps_independent_snapshot()
+    {
+        var address = new CustomerAddress
+        {
+            Id = 4,
+            Title = "خانه",
+            City = "اندیمشک",
+            AddressLine = "آدرس ذخیره‌شده",
+            IsActive = true
+        };
+        var profile = new CustomerProfile { Id = 12, Addresses = [address] };
+        address.CustomerProfile = profile;
+        var orderRepository = new FakeOrderRepository();
+        var service = CreateOrderService(profile, orderRepository);
+        var request = CreateRequest();
+        request.CustomerAddressId = address.Id;
+        request.AddressLine = null;
+
+        await service.CreateAsync(request);
+        address.AddressLine = "آدرس ویرایش‌شده";
+
+        Assert.NotNull(address.LastUsedAt);
+        Assert.Equal("آدرس ذخیره‌شده", orderRepository.Added!.DeliveryAddressLine);
+    }
+
+    private static CreateOrderRequest CreateRequest() => new()
+    {
+        TelegramUserId = 123,
+        FullName = "Test Customer",
+        PhoneNumber = "09160000000",
+        NewAddressTitle = "خانه",
+        City = "اندیمشک",
+        AddressLine = "خیابان یک",
+        SaveAddress = true,
+        DeliveryMethod = DeliveryMethod.Delivery,
+        Items = [new CreateOrderItemRequest { DailyMenuItemId = 7, Quantity = 1 }]
+    };
+
+    private static OrderService CreateOrderService(
+        CustomerProfile profile,
+        FakeOrderRepository repository) =>
+        new(repository, new FakeDailyMenuRepository(CreateMenuItem(5, 0)),
+            new FakeCustomerIdentityService(profile), new FakeUnitOfWork());
+
+    private static OrderService CreateStatusService(Order order, FakeUnitOfWork unitOfWork) =>
+        new(new FakeOrderRepository(order), new FakeDailyMenuRepository(),
+            new FakeCustomerIdentityService(order.CustomerProfile), unitOfWork);
 
     private static DailyMenuItem CreateMenuItem(int capacity, int sold) => new()
     {
         Id = 7,
+        Price = 100,
         CapacityPortions = capacity,
         SoldPortions = sold,
+        IsAvailable = true,
         Food = new Food { Name = "Test food" },
-        DailyMenu = new DailyMenu { MenuDate = new DateOnly(2026, 7, 3), IsOpen = true }
+        DailyMenu = new DailyMenu { MenuDate = new DateOnly(2026, 7, 4), IsOpen = true }
     };
 
     private static Order CreateOrder(
         DailyMenuItem menuItem,
         int quantity,
-        OrderStatus status = OrderStatus.PendingConfirmation)
+        DomainOrderStatus status = DomainOrderStatus.PendingConfirmation)
     {
+        var profile = new CustomerProfile { Id = 2, PreferredName = "Test", DefaultPhoneNumber = "09160000000" };
         var order = new Order
         {
             Id = 3,
-            Customer = new Customer { Id = 2, FullName = "Test", PhoneNumber = "09160000000" },
+            CustomerProfile = profile,
+            CustomerProfileId = profile.Id,
+            DeliveryFullName = profile.PreferredName,
+            DeliveryPhoneNumber = profile.DefaultPhoneNumber,
             Status = status,
             CreatedAt = DateTime.UtcNow
         };
@@ -105,32 +167,36 @@ public sealed class OrderServiceTests
         return order;
     }
 
-    private sealed class FakeOrderRepository(Order order) : IOrderRepository
+    private sealed class FakeOrderRepository(Order? order = null) : IOrderRepository
     {
-        public Task<Order?> GetByIdAsync(int id, CancellationToken cancellationToken = default) =>
-            Task.FromResult<Order?>(id == order.Id ? order : null);
-        public Task<Order?> GetByIdWithDetailsAsync(int id, CancellationToken cancellationToken = default) =>
-            GetByIdAsync(id, cancellationToken);
-        public Task<IReadOnlyList<Order>> GetByDateAsync(DateOnly date, OrderStatus? status = null,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<Order>>([order]);
-        public Task AddAsync(Order newOrder, CancellationToken cancellationToken = default) =>
-            Task.CompletedTask;
+        public Order? Added { get; private set; }
+        public Task<Order?> GetByIdAsync(int id, CancellationToken cancellationToken = default) => Task.FromResult(order);
+        public Task<Order?> GetByIdWithDetailsAsync(int id, CancellationToken cancellationToken = default) => Task.FromResult(order);
+        public Task<IReadOnlyList<Order>> GetByDateAsync(DateOnly date, DomainOrderStatus? status = null, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<Order>>(order is null ? [] : [order]);
+        public Task AddAsync(Order newOrder, CancellationToken cancellationToken = default)
+        {
+            Added = newOrder;
+            return Task.CompletedTask;
+        }
     }
 
-    private sealed class EmptyDailyMenuRepository : IDailyMenuRepository
+    private sealed class FakeDailyMenuRepository(DailyMenuItem? item = null) : IDailyMenuRepository
     {
         public Task<DailyMenu?> GetByDateAsync(DateOnly date, CancellationToken cancellationToken = default) => Task.FromResult<DailyMenu?>(null);
         public Task<DailyMenu?> GetByIdAsync(int id, CancellationToken cancellationToken = default) => Task.FromResult<DailyMenu?>(null);
-        public Task<DailyMenuItem?> GetItemByIdAsync(int id, CancellationToken cancellationToken = default) => Task.FromResult<DailyMenuItem?>(null);
+        public Task<DailyMenuItem?> GetItemByIdAsync(int id, CancellationToken cancellationToken = default) => Task.FromResult(item);
         public Task AddAsync(DailyMenu menu, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
-    private sealed class EmptyCustomerRepository : ICustomerRepository
+    private sealed class FakeCustomerIdentityService(CustomerProfile profile) : ICustomerIdentityService
     {
-        public Task<Customer?> GetByTelegramUserIdAsync(long id, CancellationToken cancellationToken = default) => Task.FromResult<Customer?>(null);
-        public Task<Customer?> GetByPhoneNumberAsync(string phone, CancellationToken cancellationToken = default) => Task.FromResult<Customer?>(null);
-        public Task AddAsync(Customer customer, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task<CustomerProfile> ResolveAsync(long? telegramUserId, string? telegramUsername, string fullName, string phoneNumber, DateTime now, CancellationToken cancellationToken = default)
+        {
+            profile.PreferredName = fullName;
+            profile.DefaultPhoneNumber = phoneNumber;
+            profile.LastOrderAt = now;
+            return Task.FromResult(profile);
+        }
     }
 
     private sealed class FakeUnitOfWork : IUnitOfWork

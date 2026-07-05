@@ -10,7 +10,8 @@ export interface DailyMenuItemDto {
 export interface CreateOrderItemRequest { dailyMenuItemId: number; quantity: number }
 export interface CreateOrderRequest {
   telegramUserId?: number | null; telegramUsername?: string | null; fullName: string; phoneNumber: string
-  city: string; addressLine: string; addressDescription?: string | null; paymentMethod: PaymentMethod
+  customerAddressId?: number | null; newAddressTitle?: string | null; city: string; addressLine?: string | null
+  addressDescription?: string | null; saveAddress?: boolean; paymentMethod: PaymentMethod
   deliveryMethod: DeliveryMethod; customerNote?: string | null; items: CreateOrderItemRequest[]
 }
 export interface OrderDto {

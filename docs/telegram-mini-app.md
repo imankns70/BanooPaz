@@ -19,3 +19,5 @@ The first MVP customer UI is implemented:
 - Customer can add food to cart and update quantities.
 - Customer can enter delivery details and submit an order.
 - Telegram `initData` validation is still pending; optional WebApp user data is not trusted for security.
+- Returning customers will later receive their saved profile and active address data after secure Telegram identity validation.
+- Checkout will allow selecting a previous address or adding and optionally saving a new delivery destination.

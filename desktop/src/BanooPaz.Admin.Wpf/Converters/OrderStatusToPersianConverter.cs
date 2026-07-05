@@ -1,6 +1,6 @@
 using System.Globalization;
 using System.Windows.Data;
-using BanooPaz.Domain.Enums;
+using BanooPaz.Contracts.Orders;
 
 namespace BanooPaz.Admin.Wpf.Converters;
 

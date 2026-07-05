@@ -6,8 +6,13 @@ public sealed class Order
 {
     public int Id { get; init; }
     public string OrderNumber { get; set; } = string.Empty;
-    public int CustomerId { get; init; }
+    public int CustomerProfileId { get; set; }
     public int? CustomerAddressId { get; set; }
+    public string DeliveryFullName { get; set; } = string.Empty;
+    public string DeliveryPhoneNumber { get; set; } = string.Empty;
+    public string DeliveryCity { get; set; } = "اندیمشک";
+    public string DeliveryAddressLine { get; set; } = string.Empty;
+    public string? DeliveryAddressDescription { get; set; }
     public OrderStatus Status { get; set; }
     public PaymentMethod PaymentMethod { get; set; }
     public DeliveryMethod DeliveryMethod { get; set; }
@@ -21,8 +26,8 @@ public sealed class Order
     public DateTime? DeliveredAt { get; set; }
     public DateTime? CancelledAt { get; set; }
 
-    public Customer Customer { get; init; } = null!;
-    public CustomerAddress? CustomerAddress { get; init; }
+    public CustomerProfile CustomerProfile { get; set; } = null!;
+    public CustomerAddress? CustomerAddress { get; set; }
     public ICollection<OrderItem> Items { get; init; } = new List<OrderItem>();
     public ICollection<OrderStatusHistory> StatusHistories { get; init; } = new List<OrderStatusHistory>();
 }

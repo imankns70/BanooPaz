@@ -1,6 +1,5 @@
 using BanooPaz.Application.Interfaces;
 using BanooPaz.Contracts.Orders;
-using BanooPaz.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BanooPaz.Api.Controllers;

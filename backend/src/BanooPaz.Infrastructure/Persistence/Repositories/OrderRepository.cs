@@ -10,7 +10,7 @@ public sealed class OrderRepository(BanooPazDbContext dbContext) : IOrderReposit
     public Task<Order?> GetByIdAsync(int id, CancellationToken cancellationToken = default) =>
         dbContext.Orders
             .AsNoTracking()
-            .Include(order => order.Customer)
+            .Include(order => order.CustomerProfile)
             .Include(order => order.CustomerAddress)
             .Include(order => order.Items)
             .Include(order => order.StatusHistories)
@@ -20,7 +20,7 @@ public sealed class OrderRepository(BanooPazDbContext dbContext) : IOrderReposit
         int id,
         CancellationToken cancellationToken = default) =>
         dbContext.Orders
-            .Include(order => order.Customer)
+            .Include(order => order.CustomerProfile)
             .Include(order => order.CustomerAddress)
             .Include(order => order.Items)
             .ThenInclude(item => item.DailyMenuItem)
@@ -37,7 +37,7 @@ public sealed class OrderRepository(BanooPazDbContext dbContext) : IOrderReposit
 
         var query = dbContext.Orders
             .AsNoTracking()
-            .Include(order => order.Customer)
+            .Include(order => order.CustomerProfile)
             .Include(order => order.Items)
             .Where(order => order.CreatedAt >= start && order.CreatedAt < end);
 

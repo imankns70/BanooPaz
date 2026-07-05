@@ -4,7 +4,6 @@ using System.Windows.Threading;
 using BanooPaz.Admin.Wpf.Models;
 using BanooPaz.Admin.Wpf.Services.Api;
 using BanooPaz.Contracts.Orders;
-using BanooPaz.Domain.Enums;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 

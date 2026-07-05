@@ -1,4 +1,4 @@
-using BanooPaz.Domain.Enums;
+using BanooPaz.Contracts.Orders;
 
 namespace BanooPaz.Admin.Wpf.Models;
 

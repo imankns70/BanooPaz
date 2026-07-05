@@ -8,8 +8,11 @@ public sealed class CustomerAddressConfiguration : IEntityTypeConfiguration<Cust
 {
     public void Configure(EntityTypeBuilder<CustomerAddress> builder)
     {
-        builder.Property(x => x.City).HasMaxLength(100);
-        builder.Property(x => x.AddressLine).IsRequired().HasMaxLength(1000);
-        builder.Property(x => x.Description).HasMaxLength(1000);
+        builder.Property(address => address.Title).IsRequired().HasMaxLength(100);
+        builder.Property(address => address.City).IsRequired().HasMaxLength(100);
+        builder.Property(address => address.AddressLine).IsRequired().HasMaxLength(1000);
+        builder.Property(address => address.Description).HasMaxLength(1000);
+        builder.Property(address => address.IsActive).HasDefaultValue(true);
+        builder.HasIndex(address => address.CustomerProfileId);
     }
 }

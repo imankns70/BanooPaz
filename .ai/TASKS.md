@@ -23,8 +23,16 @@
 - [x] Implement Mini App daily menu page
 - [x] Implement Mini App cart
 - [x] Implement Mini App order submission
+- [x] Refactor identity model to ASP.NET Core Identity
+- [x] Add CustomerProfile and reusable CustomerAddress
+- [x] Add default WPF admin seed
+- [x] Add admin login endpoint
 - [ ] Add public customer menu endpoint `/api/menus/today`
+- [ ] Protect WPF admin API routes with JWT authorization
+- [x] Add WPF login screen with password hide/show toggle
 - [ ] Add Telegram initData validation
+- [ ] Add returning customer profile preload endpoint
+- [ ] Add Mini App saved-address selection UI
 - [ ] Add Worker notification queue
 - [ ] Add Telegram order/status notifications
-- [ ] Add image generation/import workflow for food photos
+- [ ] Add AI food image generation workflow

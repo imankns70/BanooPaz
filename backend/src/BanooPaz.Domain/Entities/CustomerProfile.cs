@@ -1,12 +1,11 @@
 namespace BanooPaz.Domain.Entities;
 
-public sealed class Customer
+public sealed class CustomerProfile
 {
     public int Id { get; init; }
-    public long? TelegramUserId { get; set; }
-    public string? TelegramUsername { get; set; }
-    public string FullName { get; set; } = string.Empty;
-    public string PhoneNumber { get; set; } = string.Empty;
+    public int UserId { get; set; }
+    public string PreferredName { get; set; } = string.Empty;
+    public string DefaultPhoneNumber { get; set; } = string.Empty;
     public DateTime CreatedAt { get; init; }
     public DateTime? LastOrderAt { get; set; }
 

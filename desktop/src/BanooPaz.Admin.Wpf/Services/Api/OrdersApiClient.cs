@@ -2,7 +2,6 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using BanooPaz.Contracts.Orders;
-using BanooPaz.Domain.Enums;
 
 namespace BanooPaz.Admin.Wpf.Services.Api;
 

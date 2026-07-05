@@ -26,6 +26,7 @@ export function CheckoutForm({ items, onSuccess }: { items: CartItem[]; onSucces
       telegramUserId: telegramUser?.id ?? null,
       telegramUsername: telegramUser?.username ?? null,
       fullName: form.fullName.trim(), phoneNumber: form.phoneNumber.trim(), city: 'اندیمشک',
+      newAddressTitle: 'آدرس اصلی', saveAddress: true,
       addressLine: form.deliveryMethod === DeliveryMethod.Delivery ? form.addressLine.trim() : 'تحویل حضوری',
       addressDescription: form.addressDescription.trim() || null, customerNote: form.customerNote.trim() || null,
       deliveryMethod: form.deliveryMethod, paymentMethod: form.paymentMethod,

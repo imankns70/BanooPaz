@@ -1,5 +1,3 @@
-using BanooPaz.Domain.Enums;
-
 namespace BanooPaz.Contracts.Orders;
 
 public sealed class UpdateOrderStatusRequest

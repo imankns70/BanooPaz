@@ -1,11 +1,15 @@
 using BanooPaz.Domain.Entities;
+using BanooPaz.Infrastructure.Identity;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace BanooPaz.Infrastructure.Persistence;
 
-public sealed class BanooPazDbContext(DbContextOptions<BanooPazDbContext> options) : DbContext(options)
+public sealed class BanooPazDbContext(DbContextOptions<BanooPazDbContext> options)
+    : IdentityDbContext<ApplicationUser, IdentityRole<int>, int>(options)
 {
-    public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<CustomerProfile> CustomerProfiles => Set<CustomerProfile>();
     public DbSet<CustomerAddress> CustomerAddresses => Set<CustomerAddress>();
     public DbSet<Food> Foods => Set<Food>();
     public DbSet<DailyMenu> DailyMenus => Set<DailyMenu>();
@@ -13,12 +17,11 @@ public sealed class BanooPazDbContext(DbContextOptions<BanooPazDbContext> option
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     public DbSet<OrderStatusHistory> OrderStatusHistories => Set<OrderStatusHistory>();
-    public DbSet<Admin> Admins => Set<Admin>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(BanooPazDbContext).Assembly);
         base.OnModelCreating(modelBuilder);
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(BanooPazDbContext).Assembly);
     }
 }

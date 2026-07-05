@@ -1,6 +1,6 @@
 # Project state
 
-- Status: Food, daily menu, and order APIs
+- Status: Identity, customer profiles, and reusable addresses
 - Brand: BanooPaz / بانوپز
 - City: Andimeshk / اندیمشک
 - Sales model: Per portion
@@ -10,7 +10,7 @@
 - Architecture: Pragmatic Clean Architecture with the API as the central integration point
 - Current scope: Domain and persistence foundation plus Food, Daily Menu, and Order APIs
 - MVP foods: زرشک‌پلو با مرغ، قورمه‌سبزی، ماکارونی، قیمه
-- MVP domain entities have been created for customers, addresses, foods, daily menus, orders, admins, and settings.
+- MVP business entities cover customer profiles, reusable addresses, foods, daily menus, orders, and settings.
 - EF Core persistence foundation and the `InitialBanooPazSchema` migration have been added.
 - The four initial foods are seeded with fixed creation timestamps and placeholder prices.
 - Food admin APIs have been implemented.
@@ -27,3 +27,9 @@
 - WPF navigation between Orders, Foods, and Daily Menu added.
 - Telegram Mini App MVP customer UI added.
 - Customer can view menu, manage cart, and submit order.
+- ASP.NET Core Identity with integer keys manages users and roles.
+- `ApplicationUser` and roles `Customer`, `Owner`, `KitchenAdmin`, and `OrderManager` were added.
+- `CustomerProfile` and reusable `CustomerAddress` business entities were added.
+- The default development WPF admin is seeded through Identity with a hashed password.
+- Orders now store immutable delivery name, phone, city, and address snapshots.
+- Admin API login returns a JWT; existing admin routes remain temporarily unprotected for WPF compatibility.

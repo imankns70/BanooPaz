@@ -1,14 +1,16 @@
 using BanooPaz.Application.Interfaces;
 using BanooPaz.Contracts.Orders;
 using BanooPaz.Domain.Entities;
-using BanooPaz.Domain.Enums;
+using DomainDeliveryMethod = BanooPaz.Domain.Enums.DeliveryMethod;
+using DomainOrderStatus = BanooPaz.Domain.Enums.OrderStatus;
+using DomainPaymentMethod = BanooPaz.Domain.Enums.PaymentMethod;
 
 namespace BanooPaz.Application.Services;
 
 public sealed class OrderService(
     IOrderRepository orderRepository,
     IDailyMenuRepository dailyMenuRepository,
-    ICustomerRepository customerRepository,
+    ICustomerIdentityService customerIdentityService,
     IUnitOfWork unitOfWork) : IOrderService
 {
     private const string DefaultCity = "اندیمشک";
@@ -18,49 +20,37 @@ public sealed class OrderService(
         CancellationToken cancellationToken = default)
     {
         ValidateCreateRequest(request);
-
-        var customer = await FindCustomerAsync(request, cancellationToken);
         var now = DateTime.UtcNow;
-        if (customer is null)
-        {
-            customer = new Customer
-            {
-                TelegramUserId = request.TelegramUserId,
-                TelegramUsername = NormalizeOptional(request.TelegramUsername),
-                FullName = request.FullName.Trim(),
-                PhoneNumber = request.PhoneNumber.Trim(),
-                CreatedAt = now,
-                LastOrderAt = now
-            };
-            await customerRepository.AddAsync(customer, cancellationToken);
-        }
-        else
-        {
-            customer.TelegramUsername = NormalizeOptional(request.TelegramUsername);
-            customer.FullName = request.FullName.Trim();
-            customer.PhoneNumber = request.PhoneNumber.Trim();
-            customer.LastOrderAt = now;
-        }
+        var fullName = request.FullName.Trim();
+        var phoneNumber = request.PhoneNumber.Trim();
+        var profile = await customerIdentityService.ResolveAsync(
+            request.TelegramUserId,
+            request.TelegramUsername,
+            fullName,
+            phoneNumber,
+            now,
+            cancellationToken);
 
-        var address = new CustomerAddress
-        {
-            Customer = customer,
-            City = string.IsNullOrWhiteSpace(request.City) ? DefaultCity : request.City.Trim(),
-            AddressLine = request.AddressLine.Trim(),
-            Description = NormalizeOptional(request.AddressDescription),
-            IsDefault = customer.Addresses.Count == 0,
-            CreatedAt = now
-        };
-        customer.Addresses.Add(address);
+        var address = ResolveAddress(profile, request, now);
+        var deliveryCity = address?.City ?? NormalizeOptional(request.City) ?? DefaultCity;
+        var deliveryAddressLine = address?.AddressLine ?? NormalizeOptional(request.AddressLine) ?? string.Empty;
+        var deliveryDescription = address?.Description ?? NormalizeOptional(request.AddressDescription);
 
         var order = new Order
         {
             OrderNumber = GenerateOrderNumber(now),
-            Customer = customer,
+            CustomerProfile = profile,
+            CustomerProfileId = profile.Id,
             CustomerAddress = address,
-            Status = OrderStatus.PendingConfirmation,
-            PaymentMethod = request.PaymentMethod,
-            DeliveryMethod = request.DeliveryMethod,
+            CustomerAddressId = address?.Id,
+            DeliveryFullName = fullName,
+            DeliveryPhoneNumber = phoneNumber,
+            DeliveryCity = deliveryCity,
+            DeliveryAddressLine = deliveryAddressLine,
+            DeliveryAddressDescription = deliveryDescription,
+            Status = DomainOrderStatus.PendingConfirmation,
+            PaymentMethod = (DomainPaymentMethod)request.PaymentMethod,
+            DeliveryMethod = (DomainDeliveryMethod)request.DeliveryMethod,
             DeliveryFee = 0,
             CustomerNote = NormalizeOptional(request.CustomerNote),
             CreatedAt = now
@@ -102,8 +92,8 @@ public sealed class OrderService(
         order.StatusHistories.Add(new OrderStatusHistory
         {
             Order = order,
-            FromStatus = OrderStatus.PendingConfirmation,
-            ToStatus = OrderStatus.PendingConfirmation,
+            FromStatus = DomainOrderStatus.PendingConfirmation,
+            ToStatus = DomainOrderStatus.PendingConfirmation,
             Note = "Order created",
             ChangedAt = now
         });
@@ -128,13 +118,14 @@ public sealed class OrderService(
             throw new ArgumentException("Order status is invalid.");
         }
 
-        var orders = await orderRepository.GetByDateAsync(date, status, cancellationToken);
+        var orders = await orderRepository.GetByDateAsync(
+            date,
+            status.HasValue ? (DomainOrderStatus)status.Value : null,
+            cancellationToken);
         return orders.Select(MapSummary).ToList();
     }
 
-    public async Task<OrderDto?> GetByIdAsync(
-        int id,
-        CancellationToken cancellationToken = default)
+    public async Task<OrderDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         var order = await orderRepository.GetByIdAsync(id, cancellationToken);
         return order is null ? null : Map(order);
@@ -145,35 +136,39 @@ public sealed class OrderService(
         UpdateOrderStatusRequest request,
         CancellationToken cancellationToken = default)
     {
+        if (!Enum.IsDefined(request.NewStatus))
+        {
+            throw new ArgumentException("Order status is invalid.");
+        }
+
         var order = await orderRepository.GetByIdWithDetailsAsync(id, cancellationToken);
         if (order is null)
         {
             return false;
         }
 
-        if (!IsAllowedTransition(order.Status, request.NewStatus))
+        var newStatus = (DomainOrderStatus)request.NewStatus;
+        if (!IsAllowedTransition(order.Status, newStatus))
         {
-            throw new ArgumentException(
-                $"Order status cannot change from {order.Status} to {request.NewStatus}.");
+            throw new ArgumentException($"Order status cannot change from {order.Status} to {newStatus}.");
         }
 
         var previousStatus = order.Status;
         var now = DateTime.UtcNow;
-
-        if (request.NewStatus == OrderStatus.Confirmed)
+        if (newStatus == DomainOrderStatus.Confirmed)
         {
             Confirm(order, now);
         }
-        else if (request.NewStatus == OrderStatus.Cancelled)
+        else if (newStatus == DomainOrderStatus.Cancelled)
         {
             Cancel(order, now);
         }
-        else if (request.NewStatus == OrderStatus.Delivered)
+        else if (newStatus == DomainOrderStatus.Delivered)
         {
             order.DeliveredAt = now;
         }
 
-        order.Status = request.NewStatus;
+        order.Status = newStatus;
         if (request.AdminNote is not null)
         {
             order.AdminNote = NormalizeOptional(request.AdminNote);
@@ -183,30 +178,53 @@ public sealed class OrderService(
         {
             Order = order,
             FromStatus = previousStatus,
-            ToStatus = request.NewStatus,
+            ToStatus = newStatus,
             Note = NormalizeOptional(request.StatusNote),
             ChangedAt = now
         });
 
-        // TODO: Add explicit transaction support when payment/order workflows become more complex.
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
     }
 
-    private async Task<Customer?> FindCustomerAsync(
+    private static CustomerAddress? ResolveAddress(
+        CustomerProfile profile,
         CreateOrderRequest request,
-        CancellationToken cancellationToken)
+        DateTime now)
     {
-        if (request.TelegramUserId.HasValue)
+        if (request.CustomerAddressId.HasValue)
         {
-            return await customerRepository.GetByTelegramUserIdAsync(
-                request.TelegramUserId.Value,
-                cancellationToken);
+            var savedAddress = profile.Addresses.SingleOrDefault(address =>
+                address.Id == request.CustomerAddressId.Value && address.IsActive)
+                ?? throw new ArgumentException("The selected saved address was not found.");
+            savedAddress.LastUsedAt = now;
+            return savedAddress;
         }
 
-        return await customerRepository.GetByPhoneNumberAsync(
-            request.PhoneNumber.Trim(),
-            cancellationToken);
+        if (string.IsNullOrWhiteSpace(request.AddressLine))
+        {
+            return null;
+        }
+
+        if (!request.SaveAddress)
+        {
+            return null;
+        }
+
+        var address = new CustomerAddress
+        {
+            CustomerProfile = profile,
+            Title = NormalizeOptional(request.NewAddressTitle) ?? "آدرس جدید",
+            City = NormalizeOptional(request.City) ?? DefaultCity,
+            AddressLine = request.AddressLine.Trim(),
+            Description = NormalizeOptional(request.AddressDescription),
+            IsDefault = !profile.Addresses.Any(existing => existing.IsActive && existing.IsDefault),
+            IsActive = true,
+            CreatedAt = now,
+            LastUsedAt = now
+        };
+        profile.Addresses.Add(address);
+        return address;
     }
 
     private static void Confirm(Order order, DateTime now)
@@ -216,8 +234,7 @@ public sealed class OrderService(
             if (item.DailyMenuItem.RemainingPortions < item.Quantity)
             {
                 throw new ArgumentException(
-                    $"Not enough remaining portions for {item.FoodName}. " +
-                    $"Requested: {item.Quantity}, remaining: {item.DailyMenuItem.RemainingPortions}.");
+                    $"Not enough remaining portions for {item.FoodName}. Requested: {item.Quantity}, remaining: {item.DailyMenuItem.RemainingPortions}.");
             }
         }
 
@@ -231,59 +248,42 @@ public sealed class OrderService(
 
     private static void Cancel(Order order, DateTime now)
     {
-        if (order.Status is OrderStatus.Confirmed or OrderStatus.Preparing or OrderStatus.Ready)
+        if (order.Status is DomainOrderStatus.Confirmed or DomainOrderStatus.Preparing or DomainOrderStatus.Ready)
         {
             foreach (var item in order.Items)
             {
-                item.DailyMenuItem.SoldPortions = Math.Max(
-                    0,
-                    item.DailyMenuItem.SoldPortions - item.Quantity);
+                item.DailyMenuItem.SoldPortions = Math.Max(0, item.DailyMenuItem.SoldPortions - item.Quantity);
             }
         }
 
         order.CancelledAt = now;
     }
 
-    private static bool IsAllowedTransition(OrderStatus current, OrderStatus next) =>
+    private static bool IsAllowedTransition(DomainOrderStatus current, DomainOrderStatus next) =>
         (current, next) switch
         {
-            (OrderStatus.PendingConfirmation, OrderStatus.Confirmed) => true,
-            (OrderStatus.PendingConfirmation, OrderStatus.Cancelled) => true,
-            (OrderStatus.Confirmed, OrderStatus.Preparing) => true,
-            (OrderStatus.Confirmed, OrderStatus.Cancelled) => true,
-            (OrderStatus.Preparing, OrderStatus.Ready) => true,
-            (OrderStatus.Preparing, OrderStatus.Cancelled) => true,
-            (OrderStatus.Ready, OrderStatus.Delivered) => true,
-            (OrderStatus.Ready, OrderStatus.Cancelled) => true,
+            (DomainOrderStatus.PendingConfirmation, DomainOrderStatus.Confirmed) => true,
+            (DomainOrderStatus.PendingConfirmation, DomainOrderStatus.Cancelled) => true,
+            (DomainOrderStatus.Confirmed, DomainOrderStatus.Preparing) => true,
+            (DomainOrderStatus.Confirmed, DomainOrderStatus.Cancelled) => true,
+            (DomainOrderStatus.Preparing, DomainOrderStatus.Ready) => true,
+            (DomainOrderStatus.Preparing, DomainOrderStatus.Cancelled) => true,
+            (DomainOrderStatus.Ready, DomainOrderStatus.Delivered) => true,
+            (DomainOrderStatus.Ready, DomainOrderStatus.Cancelled) => true,
             _ => false
         };
 
     private static void ValidateCreateRequest(CreateOrderRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.FullName))
-        {
-            throw new ArgumentException("Full name is required.");
-        }
-
-        if (string.IsNullOrWhiteSpace(request.PhoneNumber))
-        {
-            throw new ArgumentException("Phone number is required.");
-        }
-
-        if (!Enum.IsDefined(request.PaymentMethod))
-        {
-            throw new ArgumentException("Payment method is invalid.");
-        }
-
-        if (!Enum.IsDefined(request.DeliveryMethod))
-        {
-            throw new ArgumentException("Delivery method is invalid.");
-        }
-
+        if (string.IsNullOrWhiteSpace(request.FullName)) throw new ArgumentException("Full name is required.");
+        if (string.IsNullOrWhiteSpace(request.PhoneNumber)) throw new ArgumentException("Phone number is required.");
+        if (!Enum.IsDefined(request.PaymentMethod)) throw new ArgumentException("Payment method is invalid.");
+        if (!Enum.IsDefined(request.DeliveryMethod)) throw new ArgumentException("Delivery method is invalid.");
         if (request.DeliveryMethod == DeliveryMethod.Delivery &&
+            !request.CustomerAddressId.HasValue &&
             string.IsNullOrWhiteSpace(request.AddressLine))
         {
-            throw new ArgumentException("Address line is required for delivery orders.");
+            throw new ArgumentException("A saved address or address line is required for delivery orders.");
         }
 
         if (request.Items is null || request.Items.Count == 0)
@@ -291,26 +291,16 @@ public sealed class OrderService(
             throw new ArgumentException("At least one order item is required.");
         }
 
-        var duplicateItemId = request.Items
-            .GroupBy(item => item.DailyMenuItemId)
+        var duplicateItemId = request.Items.GroupBy(item => item.DailyMenuItemId)
             .FirstOrDefault(group => group.Count() > 1)?.Key;
         if (duplicateItemId.HasValue)
         {
-            throw new ArgumentException(
-                $"Daily menu item id {duplicateItemId.Value} appears more than once.");
+            throw new ArgumentException($"Daily menu item id {duplicateItemId.Value} appears more than once.");
         }
 
-        foreach (var item in request.Items)
+        if (request.Items.Any(item => item.DailyMenuItemId <= 0 || item.Quantity <= 0))
         {
-            if (item.DailyMenuItemId <= 0)
-            {
-                throw new ArgumentException("Daily menu item id must be greater than zero.");
-            }
-
-            if (item.Quantity <= 0)
-            {
-                throw new ArgumentException("Order item quantity must be greater than zero.");
-            }
+            throw new ArgumentException("Order item ids and quantities must be greater than zero.");
         }
     }
 
@@ -324,11 +314,11 @@ public sealed class OrderService(
     {
         Id = order.Id,
         OrderNumber = order.OrderNumber,
-        CustomerFullName = order.Customer.FullName,
-        CustomerPhoneNumber = order.Customer.PhoneNumber,
-        Status = order.Status,
+        CustomerFullName = order.DeliveryFullName,
+        CustomerPhoneNumber = order.DeliveryPhoneNumber,
+        Status = (OrderStatus)order.Status,
         TotalAmount = order.TotalAmount,
-        DeliveryMethod = order.DeliveryMethod,
+        DeliveryMethod = (DeliveryMethod)order.DeliveryMethod,
         CreatedAt = order.CreatedAt,
         TotalQuantity = order.Items.Sum(item => item.Quantity)
     };
@@ -337,14 +327,14 @@ public sealed class OrderService(
     {
         Id = order.Id,
         OrderNumber = order.OrderNumber,
-        CustomerId = order.CustomerId,
-        CustomerFullName = order.Customer.FullName,
-        CustomerPhoneNumber = order.Customer.PhoneNumber,
-        AddressLine = order.CustomerAddress?.AddressLine,
-        AddressDescription = order.CustomerAddress?.Description,
-        Status = order.Status,
-        PaymentMethod = order.PaymentMethod,
-        DeliveryMethod = order.DeliveryMethod,
+        CustomerId = order.CustomerProfileId,
+        CustomerFullName = order.DeliveryFullName,
+        CustomerPhoneNumber = order.DeliveryPhoneNumber,
+        AddressLine = order.DeliveryAddressLine,
+        AddressDescription = order.DeliveryAddressDescription,
+        Status = (OrderStatus)order.Status,
+        PaymentMethod = (PaymentMethod)order.PaymentMethod,
+        DeliveryMethod = (DeliveryMethod)order.DeliveryMethod,
         SubtotalAmount = order.SubtotalAmount,
         DeliveryFee = order.DeliveryFee,
         TotalAmount = order.TotalAmount,
@@ -354,27 +344,22 @@ public sealed class OrderService(
         ConfirmedAt = order.ConfirmedAt,
         DeliveredAt = order.DeliveredAt,
         CancelledAt = order.CancelledAt,
-        Items = order.Items
-            .OrderBy(item => item.Id)
-            .Select(item => new OrderItemDto
-            {
-                Id = item.Id,
-                DailyMenuItemId = item.DailyMenuItemId,
-                FoodName = item.FoodName,
-                UnitPrice = item.UnitPrice,
-                Quantity = item.Quantity,
-                TotalPrice = item.TotalPrice
-            })
-            .ToList(),
-        StatusHistories = order.StatusHistories
-            .OrderBy(history => history.ChangedAt)
+        Items = order.Items.OrderBy(item => item.Id).Select(item => new OrderItemDto
+        {
+            Id = item.Id,
+            DailyMenuItemId = item.DailyMenuItemId,
+            FoodName = item.FoodName,
+            UnitPrice = item.UnitPrice,
+            Quantity = item.Quantity,
+            TotalPrice = item.TotalPrice
+        }).ToList(),
+        StatusHistories = order.StatusHistories.OrderBy(history => history.ChangedAt)
             .Select(history => new OrderStatusHistoryDto
             {
-                FromStatus = history.FromStatus,
-                ToStatus = history.ToStatus,
+                FromStatus = (OrderStatus)history.FromStatus,
+                ToStatus = (OrderStatus)history.ToStatus,
                 Note = history.Note,
                 ChangedAt = history.ChangedAt
-            })
-            .ToList()
+            }).ToList()
     };
 }

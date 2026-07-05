@@ -23,3 +23,10 @@
 - A food can appear only once in a given daily menu.
 - The Mini App temporarily reads today's menu from the admin daily-menu endpoint until a public `/api/menus/today` endpoint is added.
 - Telegram WebApp user data may prefill an order but remains untrusted until backend `initData` validation is implemented.
+- ASP.NET Core Identity replaces custom user, role, and admin tables.
+- Identity uses `IdentityUser<int>` and `IdentityRole<int>`; `MustChangePassword` is not used.
+- WPF admin authentication uses API login and JWT, never direct database access.
+- Telegram Mini App customers will map to Identity users after backend `initData` validation.
+- Customer addresses are reusable, while every order keeps independent delivery snapshots.
+- Public order enums live in Contracts so client projects do not depend on Domain.
+- Food images will be AI-generated later for Telegram channel posts and Mini App cards.
