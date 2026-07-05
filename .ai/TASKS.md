@@ -30,7 +30,7 @@
 - [x] Add public customer menu endpoint `/api/menus/today`
 - [x] Protect WPF admin API routes with JWT authorization
 - [x] Add WPF login screen with password hide/show toggle
-- [ ] Add Telegram initData validation
+- [x] Add Telegram initData validation
 - [ ] Add returning customer profile preload endpoint
 - [ ] Add Mini App saved-address selection UI
 - [ ] Add Worker notification queue

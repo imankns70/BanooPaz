@@ -22,6 +22,7 @@
     <ProjectReference Include="..\..\src\BanooPaz.Domain\BanooPaz.Domain.csproj" />
     <ProjectReference Include="..\..\src\BanooPaz.Application\BanooPaz.Application.csproj" />
     <ProjectReference Include="..\..\src\BanooPaz.Contracts\BanooPaz.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\BanooPaz.Infrastructure\BanooPaz.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

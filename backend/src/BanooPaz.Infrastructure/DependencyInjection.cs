@@ -31,6 +31,7 @@ public static class DependencyInjection
             .AddRoles<IdentityRole<int>>()
             .AddEntityFrameworkStores<BanooPazDbContext>();
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+        services.Configure<TelegramOptions>(configuration.GetSection(TelegramOptions.SectionName));
         services.AddScoped<IFoodRepository, FoodRepository>();
         services.AddScoped<IDailyMenuRepository, DailyMenuRepository>();
         services.AddScoped<IOrderRepository, OrderRepository>();
@@ -38,6 +39,7 @@ public static class DependencyInjection
         services.AddScoped<ICustomerIdentityService, CustomerIdentityService>();
         services.AddScoped<ICustomerProfileService, CustomerProfileService>();
         services.AddScoped<IAdminAuthService, AdminAuthService>();
+        services.AddSingleton<ITelegramInitDataValidator, TelegramInitDataValidator>();
 
         return services;
     }

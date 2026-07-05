@@ -123,11 +123,11 @@ public sealed class OrderServiceTests
         CustomerProfile profile,
         FakeOrderRepository repository) =>
         new(repository, new FakeDailyMenuRepository(CreateMenuItem(5, 0)),
-            new FakeCustomerIdentityService(profile), new FakeUnitOfWork());
+            new FakeCustomerIdentityService(profile), new FakeTelegramInitDataValidator(), new FakeUnitOfWork());
 
     private static OrderService CreateStatusService(Order order, FakeUnitOfWork unitOfWork) =>
         new(new FakeOrderRepository(order), new FakeDailyMenuRepository(),
-            new FakeCustomerIdentityService(order.CustomerProfile), unitOfWork);
+            new FakeCustomerIdentityService(order.CustomerProfile), new FakeTelegramInitDataValidator(), unitOfWork);
 
     private static DailyMenuItem CreateMenuItem(int capacity, int sold) => new()
     {
@@ -197,6 +197,12 @@ public sealed class OrderServiceTests
             profile.LastOrderAt = now;
             return Task.FromResult(profile);
         }
+    }
+
+    private sealed class FakeTelegramInitDataValidator : ITelegramInitDataValidator
+    {
+        public BanooPaz.Application.Common.TelegramInitDataValidationResult Validate(string? initData) =>
+            BanooPaz.Application.Common.TelegramInitDataValidationResult.MissingOptional();
     }
 
     private sealed class FakeUnitOfWork : IUnitOfWork

@@ -22,5 +22,9 @@ public sealed class OrdersController(IOrderService orderService) : ControllerBas
         {
             return BadRequest(new { error = exception.Message });
         }
+        catch (UnauthorizedAccessException exception)
+        {
+            return Unauthorized(new { error = exception.Message });
+        }
     }
 }

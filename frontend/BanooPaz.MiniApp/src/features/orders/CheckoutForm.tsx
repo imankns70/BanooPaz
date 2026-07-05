@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { createOrder } from '../../services/ordersApi'
-import { getTelegramUser } from '../../services/telegram'
+import { getTelegramInitData, getTelegramUser } from '../../services/telegram'
 import { DeliveryMethod, PaymentMethod, type CartItem, type CreateOrderRequest, type OrderDto } from '../../types'
 
 type FormState = { fullName: string; phoneNumber: string; addressLine: string; addressDescription: string; customerNote: string; deliveryMethod: DeliveryMethod; paymentMethod: PaymentMethod }
@@ -23,6 +23,7 @@ export function CheckoutForm({ items, onSuccess }: { items: CartItem[]; onSucces
 
     const telegramUser = getTelegramUser()
     const request: CreateOrderRequest = {
+      telegramInitData: getTelegramInitData(),
       telegramUserId: telegramUser?.id ?? null,
       telegramUsername: telegramUser?.username ?? null,
       fullName: form.fullName.trim(), phoneNumber: form.phoneNumber.trim(), city: 'اندیمشک',

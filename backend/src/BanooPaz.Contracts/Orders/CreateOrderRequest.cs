@@ -2,6 +2,7 @@ namespace BanooPaz.Contracts.Orders;
 
 public sealed class CreateOrderRequest
 {
+    public string? TelegramInitData { get; set; }
     public long? TelegramUserId { get; set; }
     public string? TelegramUsername { get; set; }
     public string FullName { get; set; } = string.Empty;

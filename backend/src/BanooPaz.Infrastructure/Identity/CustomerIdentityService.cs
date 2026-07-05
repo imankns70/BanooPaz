@@ -19,7 +19,6 @@ public sealed class CustomerIdentityService(
         DateTime now,
         CancellationToken cancellationToken = default)
     {
-        // TODO: Replace temporary TelegramUserId trust with backend Telegram initData validation.
         var user = telegramUserId.HasValue
             ? await dbContext.Users
                 .Include(candidate => candidate.CustomerProfile)!

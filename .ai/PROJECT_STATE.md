@@ -36,3 +36,4 @@
 - WPF stores the admin JWT in memory after login and attaches it to admin API requests as a bearer token.
 - Admin food, daily-menu, and order routes require an authenticated admin role (`Owner`, `KitchenAdmin`, or `OrderManager`).
 - The Mini App reads today's menu from the public `/api/menus/today` endpoint.
+- Telegram Mini App order submissions send raw `Telegram.WebApp.initData`; the backend validates the HMAC signature and freshness before trusting Telegram user identity. Missing `initData` is allowed only for development fallback when validation is not required.
