@@ -46,7 +46,6 @@ public sealed class OrdersViewModel : ObservableObject, IDisposable
 
         _pollTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
         _pollTimer.Tick += PollTimerOnTick;
-        _pollTimer.Start();
     }
 
     public ObservableCollection<OrderSummaryDto> Orders { get; } = [];
@@ -126,6 +125,14 @@ public sealed class OrdersViewModel : ObservableObject, IDisposable
     {
         _pollTimer.Stop();
         _pollTimer.Tick -= PollTimerOnTick;
+    }
+
+    public void StartPolling()
+    {
+        if (!_pollTimer.IsEnabled)
+        {
+            _pollTimer.Start();
+        }
     }
 
     private IAsyncRelayCommand CreateStatusCommand(OrderStatus status) =>

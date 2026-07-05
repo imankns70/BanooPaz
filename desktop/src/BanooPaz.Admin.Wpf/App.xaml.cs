@@ -26,12 +26,17 @@ public partial class App : Application
                 var baseUrl = context.Configuration["Api:BaseUrl"]
                     ?? throw new InvalidOperationException("Api:BaseUrl is not configured.");
 
+                services.AddSingleton<IAdminSession, AdminSession>();
+                services.AddTransient<BearerTokenHandler>();
                 services.AddHttpClient<IOrdersApiClient, OrdersApiClient>(client =>
-                    client.BaseAddress = new Uri(baseUrl));
+                    client.BaseAddress = new Uri(baseUrl))
+                    .AddHttpMessageHandler<BearerTokenHandler>();
                 services.AddHttpClient<IFoodsApiClient, FoodsApiClient>(client =>
-                    client.BaseAddress = new Uri(baseUrl));
+                    client.BaseAddress = new Uri(baseUrl))
+                    .AddHttpMessageHandler<BearerTokenHandler>();
                 services.AddHttpClient<IDailyMenusApiClient, DailyMenusApiClient>(client =>
-                    client.BaseAddress = new Uri(baseUrl));
+                    client.BaseAddress = new Uri(baseUrl))
+                    .AddHttpMessageHandler<BearerTokenHandler>();
                 services.AddHttpClient<IAuthApiClient, AuthApiClient>(client =>
                     client.BaseAddress = new Uri(baseUrl));
                 services.AddSingleton<LoginViewModel>();

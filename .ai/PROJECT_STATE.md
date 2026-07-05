@@ -32,4 +32,7 @@
 - `CustomerProfile` and reusable `CustomerAddress` business entities were added.
 - The default development WPF admin is seeded through Identity with a hashed password.
 - Orders now store immutable delivery name, phone, city, and address snapshots.
-- Admin API login returns a JWT; existing admin routes remain temporarily unprotected for WPF compatibility.
+- Admin API login returns a JWT.
+- WPF stores the admin JWT in memory after login and attaches it to admin API requests as a bearer token.
+- Admin food, daily-menu, and order routes require an authenticated admin role (`Owner`, `KitchenAdmin`, or `OrderManager`).
+- The Mini App reads today's menu from the public `/api/menus/today` endpoint.

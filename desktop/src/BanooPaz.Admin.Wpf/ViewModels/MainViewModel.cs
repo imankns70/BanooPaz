@@ -24,5 +24,7 @@ public sealed class MainViewModel(
     public void MarkAuthenticated()
     {
         IsAuthenticated = true;
+        Orders.StartPolling();
+        Orders.RefreshCommand.Execute(null);
     }
 }

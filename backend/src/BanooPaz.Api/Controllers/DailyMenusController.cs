@@ -1,10 +1,13 @@
+using BanooPaz.Application.Common;
 using BanooPaz.Application.Interfaces;
 using BanooPaz.Contracts.Menus;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BanooPaz.Api.Controllers;
 
 [ApiController]
+[Authorize(Roles = AppRoles.AdminRoleList)]
 [Route("api/admin/daily-menus")]
 public sealed class DailyMenusController(IDailyMenuService dailyMenuService) : ControllerBase
 {

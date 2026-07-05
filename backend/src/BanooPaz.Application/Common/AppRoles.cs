@@ -6,6 +6,7 @@ public static class AppRoles
     public const string Owner = "Owner";
     public const string KitchenAdmin = "KitchenAdmin";
     public const string OrderManager = "OrderManager";
+    public const string AdminRoleList = Owner + "," + KitchenAdmin + "," + OrderManager;
 
     public static readonly IReadOnlySet<string> AdminRoles = new HashSet<string>(StringComparer.Ordinal)
     {

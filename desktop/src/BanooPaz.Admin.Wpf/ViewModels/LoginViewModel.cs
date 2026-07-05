@@ -9,15 +9,17 @@ namespace BanooPaz.Admin.Wpf.ViewModels;
 public sealed class LoginViewModel : ObservableObject
 {
     private readonly IAuthApiClient _authApiClient;
+    private readonly IAdminSession _adminSession;
     private string _username = "admin";
     private string _password = string.Empty;
     private bool _isPasswordVisible;
     private bool _isBusy;
     private string? _errorMessage;
 
-    public LoginViewModel(IAuthApiClient authApiClient)
+    public LoginViewModel(IAuthApiClient authApiClient, IAdminSession adminSession)
     {
         _authApiClient = authApiClient;
+        _adminSession = adminSession;
         LoginCommand = new AsyncRelayCommand(LoginAsync, CanLogin);
     }
 
@@ -93,6 +95,7 @@ public sealed class LoginViewModel : ObservableObject
                 Password = Password
             });
 
+            _adminSession.Start(response);
             Password = string.Empty;
             LoginSucceeded?.Invoke(this, response);
         }

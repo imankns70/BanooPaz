@@ -27,8 +27,8 @@
 - [x] Add CustomerProfile and reusable CustomerAddress
 - [x] Add default WPF admin seed
 - [x] Add admin login endpoint
-- [ ] Add public customer menu endpoint `/api/menus/today`
-- [ ] Protect WPF admin API routes with JWT authorization
+- [x] Add public customer menu endpoint `/api/menus/today`
+- [x] Protect WPF admin API routes with JWT authorization
 - [x] Add WPF login screen with password hide/show toggle
 - [ ] Add Telegram initData validation
 - [ ] Add returning customer profile preload endpoint

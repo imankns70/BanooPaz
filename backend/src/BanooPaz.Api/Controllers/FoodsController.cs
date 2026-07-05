@@ -1,10 +1,13 @@
+using BanooPaz.Application.Common;
 using BanooPaz.Application.Interfaces;
 using BanooPaz.Contracts.Foods;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BanooPaz.Api.Controllers;
 
 [ApiController]
+[Authorize(Roles = AppRoles.AdminRoleList)]
 [Route("api/admin/foods")]
 public sealed class FoodsController(IFoodService foodService) : ControllerBase
 {
