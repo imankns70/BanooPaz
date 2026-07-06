@@ -123,11 +123,13 @@ public sealed class OrderServiceTests
         CustomerProfile profile,
         FakeOrderRepository repository) =>
         new(repository, new FakeDailyMenuRepository(CreateMenuItem(5, 0)),
-            new FakeCustomerIdentityService(profile), new FakeTelegramInitDataValidator(), new FakeUnitOfWork());
+            new FakeCustomerIdentityService(profile), new FakeTelegramInitDataValidator(),
+            new FakeNotificationQueue(), new FakeUnitOfWork());
 
     private static OrderService CreateStatusService(Order order, FakeUnitOfWork unitOfWork) =>
         new(new FakeOrderRepository(order), new FakeDailyMenuRepository(),
-            new FakeCustomerIdentityService(order.CustomerProfile), new FakeTelegramInitDataValidator(), unitOfWork);
+            new FakeCustomerIdentityService(order.CustomerProfile), new FakeTelegramInitDataValidator(),
+            new FakeNotificationQueue(), unitOfWork);
 
     private static DailyMenuItem CreateMenuItem(int capacity, int sold) => new()
     {
@@ -190,7 +192,7 @@ public sealed class OrderServiceTests
 
     private sealed class FakeCustomerIdentityService(CustomerProfile profile) : ICustomerIdentityService
     {
-        public Task<CustomerProfile> ResolveAsync(long? telegramUserId, string? telegramUsername, string fullName, string phoneNumber, DateTime now, CancellationToken cancellationToken = default)
+        public Task<CustomerProfile> ResolveAsync(long? telegramUserId, string? telegramUsername, string? telegramFirstName, string? telegramLastName, string fullName, string phoneNumber, DateTime now, CancellationToken cancellationToken = default)
         {
             profile.PreferredName = fullName;
             profile.DefaultPhoneNumber = phoneNumber;
@@ -203,6 +205,18 @@ public sealed class OrderServiceTests
     {
         public BanooPaz.Application.Common.TelegramInitDataValidationResult Validate(string? initData) =>
             BanooPaz.Application.Common.TelegramInitDataValidationResult.MissingOptional();
+    }
+
+    private sealed class FakeNotificationQueue : INotificationQueue
+    {
+        public Task EnqueueAdminOrderSubmittedAsync(Order order, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task EnqueueCustomerOrderStatusChangedAsync(
+            Order order,
+            DomainOrderStatus newStatus,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 
     private sealed class FakeUnitOfWork : IUnitOfWork

@@ -27,7 +27,11 @@
 - Identity uses `IdentityUser<int>` and `IdentityRole<int>`; `MustChangePassword` is not used.
 - WPF admin authentication uses API login and JWT, never direct database access. The desktop client keeps the bearer token in memory and attaches it to admin API requests.
 - Telegram Mini App customers map to Identity users through validated Telegram `initData`; local development may fall back to raw user fields only when validation is explicitly not required.
+- Telegram-specific user/chat metadata belongs in `TelegramAccounts`, not directly in business profile records. Legacy Telegram columns on `AspNetUsers` remain for migration/backward compatibility, but new lookups and notification targets use `TelegramAccounts`.
 - Returning customer profile preload uses `POST /api/customers/me` with Telegram `initData`; it never exposes profile lookup by an unvalidated Telegram ID in production.
 - Customer addresses are reusable, while every order keeps independent delivery snapshots.
+- Notifications use a database outbox (`NotificationMessages`) so order changes and notification enqueueing are saved together.
+- Telegram notification delivery is handled by `BanooPaz.Worker` through Bot API `sendMessage`, with retry/backoff and failed-message tracking.
+- Admin order-submitted notifications require `Telegram:AdminChatId`; customer notifications use the validated Telegram user ID as the Telegram chat target.
 - Public order enums live in Contracts so client projects do not depend on Domain.
 - Food images will be AI-generated later for Telegram channel posts and Mini App cards.

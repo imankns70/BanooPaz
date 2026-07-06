@@ -37,5 +37,10 @@
 - Admin food, daily-menu, and order routes require an authenticated admin role (`Owner`, `KitchenAdmin`, or `OrderManager`).
 - The Mini App reads today's menu from the public `/api/menus/today` endpoint.
 - Telegram Mini App order submissions send raw `Telegram.WebApp.initData`; the backend validates the HMAC signature and freshness before trusting Telegram user identity. Missing `initData` is allowed only for development fallback when validation is not required.
+- Telegram identity and chat metadata are stored in the dedicated `TelegramAccounts` table linked one-to-one to Identity users.
 - Returning customers can preload their profile and active saved addresses through `POST /api/customers/me`.
 - The Mini App checkout prefills saved name/phone data and lets returning customers choose a saved address or add a new one.
+- `NotificationMessages` outbox added for Telegram notifications.
+- Order submission enqueues an admin Telegram notification when `Telegram:AdminChatId` is configured.
+- Order status changes enqueue customer Telegram notifications when the customer has a Telegram user ID.
+- `BanooPaz.Worker` processes pending notification messages with retry/backoff and sends them through Telegram Bot API `sendMessage`.

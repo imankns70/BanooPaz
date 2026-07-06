@@ -2,6 +2,7 @@ using BanooPaz.Application.Interfaces;
 using BanooPaz.Infrastructure.Persistence;
 using BanooPaz.Infrastructure.Persistence.Repositories;
 using BanooPaz.Infrastructure.Identity;
+using BanooPaz.Infrastructure.Notifications;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -32,6 +33,8 @@ public static class DependencyInjection
             .AddEntityFrameworkStores<BanooPazDbContext>();
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
         services.Configure<TelegramOptions>(configuration.GetSection(TelegramOptions.SectionName));
+        services.Configure<TelegramNotificationOptions>(
+            configuration.GetSection(TelegramNotificationOptions.SectionName));
         services.AddScoped<IFoodRepository, FoodRepository>();
         services.AddScoped<IDailyMenuRepository, DailyMenuRepository>();
         services.AddScoped<IOrderRepository, OrderRepository>();
@@ -39,7 +42,13 @@ public static class DependencyInjection
         services.AddScoped<ICustomerIdentityService, CustomerIdentityService>();
         services.AddScoped<ICustomerProfileService, CustomerProfileService>();
         services.AddScoped<IAdminAuthService, AdminAuthService>();
+        services.AddScoped<INotificationQueue, NotificationQueue>();
+        services.AddScoped<INotificationProcessor, NotificationProcessor>();
         services.AddSingleton<ITelegramInitDataValidator, TelegramInitDataValidator>();
+        services.AddHttpClient<ITelegramMessageSender, TelegramMessageSender>(client =>
+        {
+            client.BaseAddress = new Uri("https://api.telegram.org/");
+        });
 
         return services;
     }

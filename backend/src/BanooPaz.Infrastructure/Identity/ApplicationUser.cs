@@ -17,4 +17,5 @@ public sealed class ApplicationUser : IdentityUser<int>
     public DateTime? LastOrderAt { get; set; }
 
     public CustomerProfile? CustomerProfile { get; set; }
+    public TelegramAccount? TelegramAccount { get; set; }
 }

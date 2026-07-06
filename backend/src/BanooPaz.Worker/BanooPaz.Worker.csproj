@@ -16,4 +16,10 @@
     <ProjectReference Include="..\BanooPaz.Infrastructure\BanooPaz.Infrastructure.csproj" />
     <ProjectReference Include="..\BanooPaz.Contracts\BanooPaz.Contracts.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

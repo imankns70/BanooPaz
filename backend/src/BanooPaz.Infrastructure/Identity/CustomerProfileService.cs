@@ -11,11 +11,14 @@ public sealed class CustomerProfileService(BanooPazDbContext dbContext) : ICusto
         long telegramUserId,
         CancellationToken cancellationToken = default)
     {
-        var user = await dbContext.Users
+        var user = await dbContext.TelegramAccounts
             .AsNoTracking()
-            .Include(candidate => candidate.CustomerProfile)!
+            .Include(account => account.User)
+            .ThenInclude(candidate => candidate.CustomerProfile)!
             .ThenInclude(profile => profile!.Addresses)
-            .SingleOrDefaultAsync(candidate => candidate.TelegramUserId == telegramUserId, cancellationToken);
+            .Where(account => account.TelegramUserId == telegramUserId)
+            .Select(account => account.User)
+            .SingleOrDefaultAsync(cancellationToken);
         var profile = user?.CustomerProfile;
         if (profile is null)
         {

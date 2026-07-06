@@ -4,6 +4,7 @@ using BanooPaz.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BanooPaz.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(BanooPazDbContext))]
-    partial class BanooPazDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260706123009_AddNotificationOutbox")]
+    partial class AddNotificationOutbox
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -619,63 +622,6 @@ namespace BanooPaz.Infrastructure.Persistence.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("BanooPaz.Infrastructure.Identity.TelegramAccount", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<bool>("AllowsWriteToPm")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("ChatId")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("nvarchar(120)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("FirstName")
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<string>("LanguageCode")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<string>("LastName")
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<DateTime?>("LastSeenAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<long>("TelegramUserId")
-                        .HasColumnType("bigint");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Username")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ChatId");
-
-                    b.HasIndex("TelegramUserId")
-                        .IsUnique();
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("TelegramAccounts");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<int>", b =>
                 {
                     b.Property<int>("Id")
@@ -906,17 +852,6 @@ namespace BanooPaz.Infrastructure.Persistence.Migrations
                     b.Navigation("Order");
                 });
 
-            modelBuilder.Entity("BanooPaz.Infrastructure.Identity.TelegramAccount", b =>
-                {
-                    b.HasOne("BanooPaz.Infrastructure.Identity.ApplicationUser", "User")
-                        .WithOne("TelegramAccount")
-                        .HasForeignKey("BanooPaz.Infrastructure.Identity.TelegramAccount", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<int>", null)
@@ -1000,8 +935,6 @@ namespace BanooPaz.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("BanooPaz.Infrastructure.Identity.ApplicationUser", b =>
                 {
                     b.Navigation("CustomerProfile");
-
-                    b.Navigation("TelegramAccount");
                 });
 #pragma warning restore 612, 618
         }

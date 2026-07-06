@@ -33,6 +33,6 @@
 - [x] Add Telegram initData validation
 - [x] Add returning customer profile preload endpoint
 - [x] Add Mini App saved-address selection UI
-- [ ] Add Worker notification queue
-- [ ] Add Telegram order/status notifications
+- [x] Add Worker notification queue
+- [x] Add Telegram order/status notifications
 - [ ] Add AI food image generation workflow

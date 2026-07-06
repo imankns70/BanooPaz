@@ -12,6 +12,7 @@ public sealed class OrderService(
     IDailyMenuRepository dailyMenuRepository,
     ICustomerIdentityService customerIdentityService,
     ITelegramInitDataValidator telegramInitDataValidator,
+    INotificationQueue notificationQueue,
     IUnitOfWork unitOfWork) : IOrderService
 {
     private const string DefaultCity = "اندیمشک";
@@ -28,6 +29,8 @@ public sealed class OrderService(
         var profile = await customerIdentityService.ResolveAsync(
             telegramIdentity.UserId,
             telegramIdentity.Username,
+            telegramIdentity.FirstName,
+            telegramIdentity.LastName,
             fullName,
             phoneNumber,
             now,
@@ -101,6 +104,7 @@ public sealed class OrderService(
         });
 
         await orderRepository.AddAsync(order, cancellationToken);
+        await notificationQueue.EnqueueAdminOrderSubmittedAsync(order, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return Map(order);
     }
@@ -185,6 +189,7 @@ public sealed class OrderService(
             ChangedAt = now
         });
 
+        await notificationQueue.EnqueueCustomerOrderStatusChangedAsync(order, newStatus, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
     }
@@ -234,12 +239,16 @@ public sealed class OrderService(
         var validation = telegramInitDataValidator.Validate(request.TelegramInitData);
         if (validation.IsValid)
         {
-            return new TelegramIdentity(validation.UserId, validation.Username);
+            return new TelegramIdentity(
+                validation.UserId,
+                validation.Username,
+                validation.FirstName,
+                validation.LastName);
         }
 
         if (validation.CanUseDevelopmentFallback)
         {
-            return new TelegramIdentity(request.TelegramUserId, request.TelegramUsername);
+            return new TelegramIdentity(request.TelegramUserId, request.TelegramUsername, null, null);
         }
 
         throw new UnauthorizedAccessException(validation.Error ?? "Telegram initData is invalid.");
@@ -328,7 +337,11 @@ public sealed class OrderService(
     private static string? NormalizeOptional(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
-    private sealed record TelegramIdentity(long? UserId, string? Username);
+    private sealed record TelegramIdentity(
+        long? UserId,
+        string? Username,
+        string? FirstName,
+        string? LastName);
 
     private static OrderSummaryDto MapSummary(Order order) => new()
     {
