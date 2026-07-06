@@ -38,5 +38,8 @@
 .field input, .field textarea, .field select { width: 100%; border: 1px solid #d8c5b8; border-radius: 11px; padding: 11px; background: white; color: #342b28; }
 .field textarea { min-height: 70px; resize: vertical; }
 .form-error { color: #a42e36; background: #fff0f0; padding: 10px; border-radius: 10px; }
+.form-hint { color: #6b594f; background: #fff4e7; padding: 10px; border-radius: 10px; }
+.saved-address-card { display: grid; gap: 4px; border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: #fff; color: #4b3732; }
+.saved-address-card small { color: var(--muted); }
 .success-mark { width: 64px; height: 64px; display: grid; place-items: center; margin: 0 auto 14px; border-radius: 50%; color: white; background: var(--success); font-size: 2rem; }
 @media (min-width: 600px) { .menu-grid { grid-template-columns: repeat(2, 1fr); } .form-grid.two-columns { grid-template-columns: 1fr 1fr; } }

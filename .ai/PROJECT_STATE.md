@@ -37,3 +37,5 @@
 - Admin food, daily-menu, and order routes require an authenticated admin role (`Owner`, `KitchenAdmin`, or `OrderManager`).
 - The Mini App reads today's menu from the public `/api/menus/today` endpoint.
 - Telegram Mini App order submissions send raw `Telegram.WebApp.initData`; the backend validates the HMAC signature and freshness before trusting Telegram user identity. Missing `initData` is allowed only for development fallback when validation is not required.
+- Returning customers can preload their profile and active saved addresses through `POST /api/customers/me`.
+- The Mini App checkout prefills saved name/phone data and lets returning customers choose a saved address or add a new one.

@@ -8,6 +8,26 @@ export interface DailyMenuItemDto {
   price: number; capacityPortions: number; soldPortions: number; remainingPortions: number; isAvailable: boolean
 }
 export interface CreateOrderItemRequest { dailyMenuItemId: number; quantity: number }
+export interface CustomerProfileLookupRequest {
+  telegramInitData?: string | null
+  telegramUserId?: number | null
+  telegramUsername?: string | null
+}
+export interface CustomerAddressDto {
+  id: number
+  title: string
+  city: string
+  addressLine: string
+  description?: string | null
+  isDefault: boolean
+}
+export interface CustomerProfileDto {
+  id: number
+  userId: number
+  preferredName: string
+  defaultPhoneNumber: string
+  addresses: CustomerAddressDto[]
+}
 export interface CreateOrderRequest {
   telegramInitData?: string | null
   telegramUserId?: number | null; telegramUsername?: string | null; fullName: string; phoneNumber: string

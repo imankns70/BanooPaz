@@ -31,8 +31,8 @@
 - [x] Protect WPF admin API routes with JWT authorization
 - [x] Add WPF login screen with password hide/show toggle
 - [x] Add Telegram initData validation
-- [ ] Add returning customer profile preload endpoint
-- [ ] Add Mini App saved-address selection UI
+- [x] Add returning customer profile preload endpoint
+- [x] Add Mini App saved-address selection UI
 - [ ] Add Worker notification queue
 - [ ] Add Telegram order/status notifications
 - [ ] Add AI food image generation workflow

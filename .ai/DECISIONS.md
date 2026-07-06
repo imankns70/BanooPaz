@@ -27,6 +27,7 @@
 - Identity uses `IdentityUser<int>` and `IdentityRole<int>`; `MustChangePassword` is not used.
 - WPF admin authentication uses API login and JWT, never direct database access. The desktop client keeps the bearer token in memory and attaches it to admin API requests.
 - Telegram Mini App customers map to Identity users through validated Telegram `initData`; local development may fall back to raw user fields only when validation is explicitly not required.
+- Returning customer profile preload uses `POST /api/customers/me` with Telegram `initData`; it never exposes profile lookup by an unvalidated Telegram ID in production.
 - Customer addresses are reusable, while every order keeps independent delivery snapshots.
 - Public order enums live in Contracts so client projects do not depend on Domain.
 - Food images will be AI-generated later for Telegram channel posts and Mini App cards.
