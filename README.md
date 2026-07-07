@@ -14,8 +14,8 @@
 
 ## Repository structure
 
-- `backend/`: API, application, domain, contracts, infrastructure, worker, and tests
-- `desktop/`: WPF admin application and tests
+- `backend/`: API, application, domain, contracts, infrastructure, worker, WPF admin app, and backend tests
+- `desktop/`: WPF desktop solution and WPF admin tests
 - `frontend/`: Telegram Mini App
 - `docs/`: product and technical documentation
 - `.ai/`: current state, decisions, tasks, and reusable prompts

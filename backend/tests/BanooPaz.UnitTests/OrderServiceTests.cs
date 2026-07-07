@@ -106,6 +106,41 @@ public sealed class OrderServiceTests
         Assert.Equal("آدرس ذخیره‌شده", orderRepository.Added!.DeliveryAddressLine);
     }
 
+    [Fact]
+    public async Task CreateAdmin_allows_missing_telegram_identity()
+    {
+        var profile = new CustomerProfile { Id = 12 };
+        var orderRepository = new FakeOrderRepository();
+        var service = CreateOrderService(profile, orderRepository);
+
+        var result = await service.CreateAdminAsync(CreateRequest());
+
+        Assert.Equal("Test Customer", result.CustomerFullName);
+        Assert.NotNull(orderRepository.Added);
+    }
+
+    [Fact]
+    public async Task CreateAdmin_normalizes_persian_digit_phone_number()
+    {
+        var profile = new CustomerProfile { Id = 12 };
+        var orderRepository = new FakeOrderRepository();
+        var customerIdentityService = new FakeCustomerIdentityService(profile);
+        var service = new OrderService(
+            orderRepository,
+            new FakeDailyMenuRepository(CreateMenuItem(5, 0)),
+            customerIdentityService,
+            new FakeTelegramInitDataValidator(),
+            new FakeNotificationQueue(),
+            new FakeUnitOfWork());
+        var request = CreateRequest();
+        request.PhoneNumber = "۰۹۱۶-۰۰۰ ۰۰۰۰";
+
+        await service.CreateAdminAsync(request);
+
+        Assert.Equal("09160000000", customerIdentityService.LastPhoneNumber);
+        Assert.Equal("09160000000", orderRepository.Added!.DeliveryPhoneNumber);
+    }
+
     private static CreateOrderRequest CreateRequest() => new()
     {
         TelegramUserId = 123,
@@ -187,13 +222,17 @@ public sealed class OrderServiceTests
         public Task<DailyMenu?> GetByDateAsync(DateOnly date, CancellationToken cancellationToken = default) => Task.FromResult<DailyMenu?>(null);
         public Task<DailyMenu?> GetByIdAsync(int id, CancellationToken cancellationToken = default) => Task.FromResult<DailyMenu?>(null);
         public Task<DailyMenuItem?> GetItemByIdAsync(int id, CancellationToken cancellationToken = default) => Task.FromResult(item);
+        public Task<bool> IsItemBookedAsync(int id, CancellationToken cancellationToken = default) => Task.FromResult(false);
         public Task AddAsync(DailyMenu menu, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
     private sealed class FakeCustomerIdentityService(CustomerProfile profile) : ICustomerIdentityService
     {
+        public string? LastPhoneNumber { get; private set; }
+
         public Task<CustomerProfile> ResolveAsync(long? telegramUserId, string? telegramUsername, string? telegramFirstName, string? telegramLastName, string fullName, string phoneNumber, DateTime now, CancellationToken cancellationToken = default)
         {
+            LastPhoneNumber = phoneNumber;
             profile.PreferredName = fullName;
             profile.DefaultPhoneNumber = phoneNumber;
             profile.LastOrderAt = now;

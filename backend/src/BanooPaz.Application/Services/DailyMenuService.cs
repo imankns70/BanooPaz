@@ -37,9 +37,17 @@ public sealed class DailyMenuService(
         }
         else
         {
+            if (menu.Items.Count > 0 && request.Items.Count == 0)
+            {
+                throw new ArgumentException(
+                    "Daily menu items cannot be cleared by an empty save. Remove items individually or disable them.");
+            }
+
             menu.IsOpen = request.IsOpen;
             menu.Note = request.Note;
         }
+
+        var retainedItems = new HashSet<DailyMenuItem>();
 
         foreach (var itemRequest in request.Items)
         {
@@ -58,6 +66,7 @@ public sealed class DailyMenuService(
                     IsAvailable = itemRequest.IsAvailable,
                     CreatedAt = DateTime.UtcNow
                 });
+                retainedItems.Add(menu.Items.Single(item => item.FoodId == itemRequest.FoodId));
                 continue;
             }
 
@@ -75,6 +84,54 @@ public sealed class DailyMenuService(
             existingItem.Price = itemRequest.Price;
             existingItem.CapacityPortions = itemRequest.CapacityPortions;
             existingItem.IsAvailable = itemRequest.IsAvailable;
+            retainedItems.Add(existingItem);
+        }
+
+        var removedItems = menu.Items
+            .Where(item => !retainedItems.Contains(item))
+            .ToList();
+
+        foreach (var removedItem in removedItems)
+        {
+            if (removedItem.SoldPortions > 0)
+            {
+                throw new ArgumentException(
+                    $"Daily menu item for food id {removedItem.FoodId} cannot be removed because it has sold portions.");
+            }
+
+            menu.Items.Remove(removedItem);
+        }
+
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+        return Map(menu);
+    }
+
+    public async Task<DailyMenuDto> UpdateSettingsAsync(
+        DateOnly date,
+        UpdateDailyMenuSettingsRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (date == default)
+        {
+            throw new ArgumentException("Menu date is required.");
+        }
+
+        var menu = await dailyMenuRepository.GetByDateAsync(date, cancellationToken);
+        if (menu is null)
+        {
+            menu = new DailyMenu
+            {
+                MenuDate = date,
+                IsOpen = request.IsOpen,
+                Note = request.Note,
+                CreatedAt = DateTime.UtcNow
+            };
+            await dailyMenuRepository.AddAsync(menu, cancellationToken);
+        }
+        else
+        {
+            menu.IsOpen = request.IsOpen;
+            menu.Note = request.Note;
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -95,6 +152,120 @@ public sealed class DailyMenuService(
         item.IsAvailable = isAvailable;
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
+    }
+
+    public async Task<DailyMenuDto?> RemoveItemAsync(
+        int dailyMenuItemId,
+        CancellationToken cancellationToken = default)
+    {
+        var item = await dailyMenuRepository.GetItemByIdAsync(dailyMenuItemId, cancellationToken);
+        if (item is null)
+        {
+            return null;
+        }
+
+        if (item.SoldPortions > 0 || await dailyMenuRepository.IsItemBookedAsync(dailyMenuItemId, cancellationToken))
+        {
+            throw new ArgumentException(
+                $"Daily menu item for food id {item.FoodId} cannot be removed because it is used by customer orders.");
+        }
+
+        var menu = await dailyMenuRepository.GetByDateAsync(item.DailyMenu.MenuDate, cancellationToken);
+        if (menu is null)
+        {
+            return null;
+        }
+
+        var itemToRemove = menu.Items.SingleOrDefault(menuItem => menuItem.Id == dailyMenuItemId);
+        if (itemToRemove is null)
+        {
+            return null;
+        }
+
+        menu.Items.Remove(itemToRemove);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+        return Map(menu);
+    }
+
+    public async Task<DailyMenuDto?> UpdateItemAsync(
+        int dailyMenuItemId,
+        UpdateDailyMenuItemRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (request.Price < 0)
+        {
+            throw new ArgumentException("Price cannot be negative.");
+        }
+
+        if (request.CapacityPortions < 0)
+        {
+            throw new ArgumentException("Capacity cannot be negative.");
+        }
+
+        var item = await dailyMenuRepository.GetItemByIdAsync(dailyMenuItemId, cancellationToken);
+        if (item is null)
+        {
+            return null;
+        }
+
+        if (request.CapacityPortions < item.SoldPortions)
+        {
+            throw new ArgumentException("Capacity cannot be less than sold portions.");
+        }
+
+        item.Price = request.Price;
+        item.CapacityPortions = request.CapacityPortions;
+        item.IsAvailable = request.IsAvailable;
+
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        var menu = await dailyMenuRepository.GetByDateAsync(item.DailyMenu.MenuDate, cancellationToken);
+        return menu is null ? null : Map(menu);
+    }
+
+    public async Task<DailyMenuDto> AddItemAsync(
+        DateOnly date,
+        UpsertDailyMenuItemRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (date == default)
+        {
+            throw new ArgumentException("Menu date is required.");
+        }
+
+        ValidateItemRequest(request);
+
+        var food = await foodRepository.GetByIdAsync(request.FoodId, cancellationToken)
+            ?? throw new ArgumentException($"Food with id {request.FoodId} was not found.");
+
+        var menu = await dailyMenuRepository.GetByDateAsync(date, cancellationToken);
+        if (menu is null)
+        {
+            menu = new DailyMenu
+            {
+                MenuDate = date,
+                IsOpen = true,
+                CreatedAt = DateTime.UtcNow
+            };
+            await dailyMenuRepository.AddAsync(menu, cancellationToken);
+        }
+        else if (menu.Items.Any(item => item.FoodId == request.FoodId))
+        {
+            throw new ArgumentException($"Food id {request.FoodId} already exists in this daily menu.");
+        }
+
+        menu.Items.Add(new DailyMenuItem
+        {
+            FoodId = request.FoodId,
+            Food = food,
+            Price = request.Price,
+            CapacityPortions = request.CapacityPortions,
+            IsAvailable = request.IsAvailable,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+        return Map(menu);
     }
 
     private static DailyMenuItem? FindExistingItem(
@@ -134,20 +305,25 @@ public sealed class DailyMenuService(
 
         foreach (var item in request.Items)
         {
-            if (item.FoodId <= 0)
-            {
-                throw new ArgumentException("Food id must be greater than zero.");
-            }
+            ValidateItemRequest(item);
+        }
+    }
 
-            if (item.Price < 0)
-            {
-                throw new ArgumentException($"Price for food id {item.FoodId} cannot be negative.");
-            }
+    private static void ValidateItemRequest(UpsertDailyMenuItemRequest item)
+    {
+        if (item.FoodId <= 0)
+        {
+            throw new ArgumentException("Food id must be greater than zero.");
+        }
 
-            if (item.CapacityPortions < 0)
-            {
-                throw new ArgumentException($"Capacity for food id {item.FoodId} cannot be negative.");
-            }
+        if (item.Price < 0)
+        {
+            throw new ArgumentException($"Price for food id {item.FoodId} cannot be negative.");
+        }
+
+        if (item.CapacityPortions < 0)
+        {
+            throw new ArgumentException($"Capacity for food id {item.FoodId} cannot be negative.");
         }
     }
 

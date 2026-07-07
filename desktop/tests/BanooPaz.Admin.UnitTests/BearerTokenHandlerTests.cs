@@ -1,6 +1,6 @@
 using System.Net;
 using System.Net.Http;
-using BanooPaz.Admin.Wpf.Services.Api;
+using BanooPaz.WPF.Services.Api;
 using BanooPaz.Contracts.Auth;
 
 namespace BanooPaz.Admin.UnitTests;

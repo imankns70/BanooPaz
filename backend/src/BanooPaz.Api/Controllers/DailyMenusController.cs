@@ -35,6 +35,71 @@ public sealed class DailyMenusController(IDailyMenuService dailyMenuService) : C
         }
     }
 
+    [HttpPatch("by-date/{date}")]
+    public async Task<ActionResult<DailyMenuDto>> UpdateSettings(
+        DateOnly date,
+        UpdateDailyMenuSettingsRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await dailyMenuService.UpdateSettingsAsync(date, request, cancellationToken));
+        }
+        catch (ArgumentException exception)
+        {
+            return BadRequest(new { error = exception.Message });
+        }
+    }
+
+    [HttpPost("by-date/{date}/items")]
+    public async Task<ActionResult<DailyMenuDto>> AddItem(
+        DateOnly date,
+        UpsertDailyMenuItemRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await dailyMenuService.AddItemAsync(date, request, cancellationToken));
+        }
+        catch (ArgumentException exception)
+        {
+            return BadRequest(new { error = exception.Message });
+        }
+    }
+
+    [HttpDelete("items/{dailyMenuItemId:int}")]
+    public async Task<ActionResult<DailyMenuDto>> RemoveItem(
+        int dailyMenuItemId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var menu = await dailyMenuService.RemoveItemAsync(dailyMenuItemId, cancellationToken);
+            return menu is null ? NotFound() : Ok(menu);
+        }
+        catch (ArgumentException exception)
+        {
+            return BadRequest(new { error = exception.Message });
+        }
+    }
+
+    [HttpPatch("items/{dailyMenuItemId:int}")]
+    public async Task<ActionResult<DailyMenuDto>> UpdateItem(
+        int dailyMenuItemId,
+        UpdateDailyMenuItemRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var menu = await dailyMenuService.UpdateItemAsync(dailyMenuItemId, request, cancellationToken);
+            return menu is null ? NotFound() : Ok(menu);
+        }
+        catch (ArgumentException exception)
+        {
+            return BadRequest(new { error = exception.Message });
+        }
+    }
+
     [HttpPatch("items/{dailyMenuItemId:int}/availability")]
     public async Task<IActionResult> SetItemAvailability(
         int dailyMenuItemId,

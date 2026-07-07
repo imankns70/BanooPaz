@@ -1,20 +1,49 @@
 # Project state
 
-- Status: Identity, customer profiles, and reusable addresses
+- Status: WPF admin dashboard, identity, customer profiles, and reusable addresses
 - Brand: BanooPaz / بانوپز
 - City: Andimeshk / اندیمشک
 - Sales model: Per portion
 - Backend: ASP.NET Core Web API, SQL Server, EF Core, and .NET Worker Service
 - Admin: WPF desktop application communicating only with the API
+- WPF project location: `backend/src/BanooPaz.WPF`, beside the other source projects
+- WPF embeds and uses Vazir as the default UI font.
+- WPF login uses a food-themed background image stored in `backend/src/BanooPaz.WPF/Assets/login-food-background.png`.
+- WPF checks API reachability through `/api/health` when the login screen opens and shows a retryable message if the server is unavailable.
+- WPF uses `fa-IR` with `PersianCalendar` for date/time display and a custom Persian date picker for admin date inputs.
+- WPF admin navigation uses a right sidebar shell instead of top tabs.
+- WPF admin includes a manual order page for admin-entered phone/in-person orders.
+- WPF manual ordering shows active menu foods even when capacity is zero, but prevents adding quantities above remaining capacity.
+- WPF manual ordering hides city input and sends the default city internally.
+- WPF manual ordering defaults to pickup so admin-created orders do not require an address unless delivery is selected.
+- Admin/manual order phone numbers are normalized before customer/order storage.
+- WPF Foods manages dish identity only: name, description, image, and active status.
+- WPF Daily Menu owns daily selling price and portion capacity for each food.
+- WPF Daily Menu `افزودن به منو` persists the new menu item immediately through the API and reloads the stored menu.
+- WPF daily-menu price inputs support thousands separators.
+- WPF daily-menu price fields display comma separators such as `150,000` consistently.
+- WPF daily-menu settings save applies the stored menu returned by the API so the grid reflects persisted items and IDs.
+- WPF Daily Menu shows selected-date menu foods in a labeled `آیتم‌های منوی روزانه` grid below a compact date search bar.
+- WPF Daily Menu opens `افزودن` as a modal add-item form over the grid; it shows the selected Persian date and closes after successful add.
+- WPF Daily Menu add-item modal uses an aligned two-column form, and its `قیمت امروز` field applies thousands separators while typing.
+- WPF Daily Menu rows have `ویرایش`; edit mode reuses the modal, locks food selection, and updates daily price/capacity/active state through a single-item API.
+- WPF Daily Menu no longer has a row-level `تغییر وضعیت` button; active state is changed only through the edit modal's `فعال است؟` checkbox.
+- Daily menu delete checks whether the daily item is referenced by any order item before removal, not only whether `SoldPortions` is greater than zero.
+- The WPF Daily Menu grid is read-only for price/capacity edits in the current flow; item changes happen through explicit add, status, and delete actions.
+- The legacy full-menu replacement API rejects empty item-list saves for an existing menu with items to prevent accidental deletion.
+- Repeated Daily Menu settings-save clicks are guarded so only one save runs at a time, and save failures are shown as page errors instead of crashing WPF.
+- WPF Daily Menu uses action-based item management: add creates one item immediately, status changes are immediate, delete removes one unsold item immediately, and the top save button only persists menu-level settings.
+- Backend exposes an explicit daily-menu item add route so WPF does not rely on local draft rows for adding foods.
+- Payment method is currently a contracts enum, not a database table; no payment gateway exists yet.
 - Customer: React + TypeScript + Vite Telegram Mini App
 - Architecture: Pragmatic Clean Architecture with the API as the central integration point
 - Current scope: Domain and persistence foundation plus Food, Daily Menu, and Order APIs
 - MVP foods: زرشک‌پلو با مرغ، قورمه‌سبزی، ماکارونی، قیمه
 - MVP business entities cover customer profiles, reusable addresses, foods, daily menus, orders, and settings.
 - EF Core persistence foundation and the `InitialBanooPazSchema` migration have been added.
-- The four initial foods are seeded with fixed creation timestamps and placeholder prices.
+- The four initial foods are seeded with fixed creation timestamps; selling price is configured per daily menu item.
 - Food admin APIs have been implemented.
-- Daily menu admin APIs have been implemented with additive item upserts.
+- Daily menu admin APIs have been implemented with additive item upserts, settings-only updates, and single-item deletion.
 - Customer order submission has been implemented.
 - Admin order listing, details, and status management have been implemented.
 - Daily menu capacity changes only when an order is confirmed or a confirmed order is cancelled.
@@ -35,6 +64,7 @@
 - Admin API login returns a JWT.
 - WPF stores the admin JWT in memory after login and attaches it to admin API requests as a bearer token.
 - Admin food, daily-menu, and order routes require an authenticated admin role (`Owner`, `KitchenAdmin`, or `OrderManager`).
+- The WPF admin dashboard loads after login and shows today's order counts, active orders, portions, gross non-cancelled sales, and menu state through `/api/admin/dashboard/today`.
 - The Mini App reads today's menu from the public `/api/menus/today` endpoint.
 - Telegram Mini App order submissions send raw `Telegram.WebApp.initData`; the backend validates the HMAC signature and freshness before trusting Telegram user identity. Missing `initData` is allowed only for development fallback when validation is not required.
 - Telegram identity and chat metadata are stored in the dedicated `TelegramAccounts` table linked one-to-one to Identity users.

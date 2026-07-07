@@ -7,6 +7,9 @@ public interface IOrderService
     Task<OrderDto> CreateAsync(
         CreateOrderRequest request,
         CancellationToken cancellationToken = default);
+    Task<OrderDto> CreateAdminAsync(
+        CreateOrderRequest request,
+        CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<OrderSummaryDto>> GetByDateAsync(
         DateOnly date,

@@ -14,7 +14,7 @@
 - [x] Implement Daily Menu API endpoints
 - [x] Implement Order API endpoints
 - [x] Implement WPF API client
-- [ ] Implement WPF dashboard screen
+- [x] Implement WPF dashboard screen
 - [x] Implement WPF order list screen
 - [x] Implement WPF order detail/status screen
 - [x] Remove Microsoft.OpenApi dependency/warning
@@ -35,4 +35,21 @@
 - [x] Add Mini App saved-address selection UI
 - [x] Add Worker notification queue
 - [x] Add Telegram order/status notifications
+- [x] Add Swagger UI to API
+- [x] Add WPF startup API reachability check
+- [x] Configure WPF Persian calendar display
+- [x] Change WPF admin layout to right sidebar navigation
+- [x] Apply Vazir font to WPF admin
+- [x] Fix daily menu save/delete behavior for unsold items
+- [x] Add WPF manual order page
+- [x] Fix WPF manual order food selection and city/price input polish
+- [x] Add WPF login food background
+- [x] Fix WPF daily-menu grid refresh after save
+- [x] Harden manual order storage defaults and phone normalization
+- [x] Move WPF price entry from Foods to Daily Menu add flow
+- [x] Guard daily-menu save against accidental empty-menu deletion
+- [x] Guard repeated Daily Menu save clicks from crashing WPF
+- [x] Preserve unsaved Daily Menu rows during sidebar navigation
+- [x] Make Daily Menu price separator formatting deterministic
+- [x] Change WPF Daily Menu add flow to immediate API persistence
 - [ ] Add AI food image generation workflow

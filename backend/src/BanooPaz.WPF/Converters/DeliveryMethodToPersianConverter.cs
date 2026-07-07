@@ -1,0 +1,19 @@
+using System.Globalization;
+using System.Windows.Data;
+using BanooPaz.Contracts.Orders;
+
+namespace BanooPaz.WPF.Converters;
+
+public sealed class DeliveryMethodToPersianConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+        value is DeliveryMethod method ? method switch
+        {
+            DeliveryMethod.Pickup => "تحویل حضوری",
+            DeliveryMethod.Delivery => "ارسال",
+            _ => method.ToString()
+        } : string.Empty;
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}

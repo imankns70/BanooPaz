@@ -24,6 +24,9 @@ public sealed class DailyMenuRepository(BanooPazDbContext dbContext) : IDailyMen
             .Include(item => item.Food)
             .SingleOrDefaultAsync(item => item.Id == id, cancellationToken);
 
+    public Task<bool> IsItemBookedAsync(int id, CancellationToken cancellationToken = default) =>
+        dbContext.OrderItems.AnyAsync(item => item.DailyMenuItemId == id, cancellationToken);
+
     public async Task AddAsync(DailyMenu dailyMenu, CancellationToken cancellationToken = default) =>
         await dbContext.DailyMenus.AddAsync(dailyMenu, cancellationToken);
 }

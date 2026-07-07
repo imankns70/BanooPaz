@@ -19,13 +19,24 @@ public sealed class OrderService(
 
     public async Task<OrderDto> CreateAsync(
         CreateOrderRequest request,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        await CreateCoreAsync(request, allowMissingTelegramIdentity: false, cancellationToken);
+
+    public async Task<OrderDto> CreateAdminAsync(
+        CreateOrderRequest request,
+        CancellationToken cancellationToken = default) =>
+        await CreateCoreAsync(request, allowMissingTelegramIdentity: true, cancellationToken);
+
+    private async Task<OrderDto> CreateCoreAsync(
+        CreateOrderRequest request,
+        bool allowMissingTelegramIdentity,
+        CancellationToken cancellationToken)
     {
         ValidateCreateRequest(request);
         var now = DateTime.UtcNow;
         var fullName = request.FullName.Trim();
-        var phoneNumber = request.PhoneNumber.Trim();
-        var telegramIdentity = ResolveTelegramIdentity(request);
+        var phoneNumber = NormalizePhoneNumber(request.PhoneNumber);
+        var telegramIdentity = ResolveTelegramIdentity(request, allowMissingTelegramIdentity);
         var profile = await customerIdentityService.ResolveAsync(
             telegramIdentity.UserId,
             telegramIdentity.Username,
@@ -234,8 +245,15 @@ public sealed class OrderService(
         return address;
     }
 
-    private TelegramIdentity ResolveTelegramIdentity(CreateOrderRequest request)
+    private TelegramIdentity ResolveTelegramIdentity(
+        CreateOrderRequest request,
+        bool allowMissingTelegramIdentity)
     {
+        if (allowMissingTelegramIdentity && string.IsNullOrWhiteSpace(request.TelegramInitData))
+        {
+            return new TelegramIdentity(null, null, null, null);
+        }
+
         var validation = telegramInitDataValidator.Validate(request.TelegramInitData);
         if (validation.IsValid)
         {
@@ -336,6 +354,22 @@ public sealed class OrderService(
 
     private static string? NormalizeOptional(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static string NormalizePhoneNumber(string value)
+    {
+        var normalizedDigits = value
+            .Trim()
+            .Select(character => character switch
+            {
+                >= '۰' and <= '۹' => (char)('0' + character - '۰'),
+                >= '٠' and <= '٩' => (char)('0' + character - '٠'),
+                _ => character
+            });
+
+        return new string(normalizedDigits
+            .Where(character => char.IsDigit(character) || character == '+')
+            .ToArray());
+    }
 
     private sealed record TelegramIdentity(
         long? UserId,

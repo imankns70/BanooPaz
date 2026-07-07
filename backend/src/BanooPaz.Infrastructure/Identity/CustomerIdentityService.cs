@@ -21,6 +21,7 @@ public sealed class CustomerIdentityService(
         DateTime now,
         CancellationToken cancellationToken = default)
     {
+        var customerUsername = CreateCustomerUsername(telegramUserId, phoneNumber);
         var user = telegramUserId.HasValue
             ? await dbContext.TelegramAccounts
                 .Include(account => account.User)
@@ -34,13 +35,16 @@ public sealed class CustomerIdentityService(
                 .Include(candidate => candidate.CustomerProfile)!
                 .ThenInclude(profile => profile!.Addresses)
                 .OrderBy(candidate => candidate.Id)
-                .FirstOrDefaultAsync(candidate => candidate.PhoneNumber == phoneNumber, cancellationToken);
+                .FirstOrDefaultAsync(
+                    candidate => candidate.PhoneNumber == phoneNumber ||
+                                 candidate.UserName == customerUsername,
+                    cancellationToken);
 
         if (user is null)
         {
             user = new ApplicationUser
             {
-                UserName = CreateCustomerUsername(telegramUserId, phoneNumber),
+                UserName = customerUsername,
                 PhoneNumber = phoneNumber,
                 FullName = fullName,
                 IsActive = true,

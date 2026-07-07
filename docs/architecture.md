@@ -12,16 +12,18 @@ BanooPaz.Api
 SQL Server
         ^
         |
-BanooPaz.Admin.Wpf
+BanooPaz.WPF
 
 BanooPaz.Worker -> SQL Server outbox -> Telegram Bot API
 ```
 
 The codebase follows Clean Architecture pragmatically: Domain contains business concepts, Application coordinates use cases, Contracts carries shared transport models, and Infrastructure implements external concerns.
 
-Admin endpoints use the `/api/admin/...` route prefix and require a valid JWT for an admin role (`Owner`, `KitchenAdmin`, or `OrderManager`). The WPF application consumes these HTTP APIs for food, daily-menu, and order management; it does not access SQL Server directly.
+Swagger UI is enabled for the API in Development at `/swagger`. It documents the v1 API surface and includes JWT Bearer authorization support so protected admin endpoints can be tested after logging in through `/api/auth/admin/login`.
 
-Customer menu reading uses the public `GET /api/menus/today` endpoint. Returning customer preload uses `POST /api/customers/me`, validates Telegram identity, and returns the saved profile plus active addresses when present. Customer order submission uses `POST /api/orders`. Admin order listing, details, and status changes use `/api/admin/orders` routes. All route groups call Application services; clients never access persistence directly.
+Admin endpoints use the `/api/admin/...` route prefix and require a valid JWT for an admin role (`Owner`, `KitchenAdmin`, or `OrderManager`). The WPF application consumes these HTTP APIs for dashboard, food, daily-menu, and order management; it does not access SQL Server directly.
+
+Customer menu reading uses the public `GET /api/menus/today` endpoint. Returning customer preload uses `POST /api/customers/me`, validates Telegram identity, and returns the saved profile plus active addresses when present. Customer order submission uses `POST /api/orders`. Admin dashboard summary uses `GET /api/admin/dashboard/today`; admin manual order creation uses `POST /api/admin/orders`; and admin order listing, details, and status changes use `/api/admin/orders` routes. All route groups call Application services; clients never access persistence directly.
 
 `BanooPaz.Worker` processes pending `NotificationMessages` from the database outbox. Order submission enqueues an admin Telegram notification when `Telegram:AdminChatId` is configured. Order status changes enqueue customer Telegram notifications when the customer has a Telegram user ID. The Worker sends messages through Telegram Bot API `sendMessage`, marks successful messages as sent, and retries failures with backoff until the configured retry limit is reached.
 

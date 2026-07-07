@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http;
 using System.Text;
-using BanooPaz.Admin.Wpf.Services.Api;
+using BanooPaz.WPF.Services.Api;
 using BanooPaz.Contracts.Orders;
 
 namespace BanooPaz.Admin.UnitTests;

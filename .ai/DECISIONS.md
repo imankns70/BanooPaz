@@ -3,6 +3,7 @@
 - The brand name is BanooPaz / بانوپز and the product is built in memory of mother.
 - SQL Server is selected as the database.
 - WPF is selected for the admin application.
+- The WPF admin project lives under `backend/src/BanooPaz.WPF` beside the other source projects; desktop tests and the desktop solution remain under `desktop/`.
 - A Telegram Mini App is selected for the customer application.
 - The backend API is the central integration point.
 - WPF must not connect directly to SQL Server.
@@ -14,13 +15,16 @@
   - قیمه
 - Domain enums are stored as integers for now.
 - Order items snapshot food name, unit price, and total price so historical orders remain stable.
+- Food records do not represent the selling price in the WPF admin workflow; price and capacity belong to the daily menu item.
 - Orders start in `PendingConfirmation`; submission does not reserve or reduce capacity.
 - Admin confirmation increases `SoldPortions`, while cancellation after confirmation restores those portions.
 - Order confirmation and cancellation persist order status, history, timestamps, and capacity in one save operation.
-- `Microsoft.OpenApi` is not used in this project.
-- Swagger/OpenAPI tooling is not required for the MVP unless explicitly requested later.
+- Swagger/OpenAPI is enabled for the API in Development because it was explicitly requested.
+- Swagger UI uses Swashbuckle and includes JWT Bearer authorization support for testing protected admin endpoints.
 - Daily menu date is unique.
 - A food can appear only once in a given daily menu.
+- Existing daily menus with items cannot be cleared by an empty save; this guards against UI load failures wiping unsold items.
+- Daily-menu item creation is an immediate API operation in WPF; the full-menu save flow is reserved for editing already-loaded rows/menu metadata.
 - The Mini App reads today's menu from the public `/api/menus/today` endpoint; admin daily-menu routes are reserved for authenticated WPF/admin use.
 - Telegram WebApp user data is trusted only after backend `initData` HMAC validation succeeds.
 - ASP.NET Core Identity replaces custom user, role, and admin tables.
@@ -34,4 +38,5 @@
 - Telegram notification delivery is handled by `BanooPaz.Worker` through Bot API `sendMessage`, with retry/backoff and failed-message tracking.
 - Admin order-submitted notifications require `Telegram:AdminChatId`; customer notifications use the validated Telegram user ID as the Telegram chat target.
 - Public order enums live in Contracts so client projects do not depend on Domain.
+- Payment method (`روش پرداخت`) remains an enum for now, not a database lookup table.
 - Food images will be AI-generated later for Telegram channel posts and Mini App cards.

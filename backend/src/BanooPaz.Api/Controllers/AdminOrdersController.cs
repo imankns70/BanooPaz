@@ -11,6 +11,22 @@ namespace BanooPaz.Api.Controllers;
 [Route("api/admin/orders")]
 public sealed class AdminOrdersController(IOrderService orderService) : ControllerBase
 {
+    [HttpPost]
+    public async Task<ActionResult<OrderDto>> Create(
+        CreateOrderRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var order = await orderService.CreateAdminAsync(request, cancellationToken);
+            return Created($"/api/admin/orders/{order.Id}", order);
+        }
+        catch (ArgumentException exception)
+        {
+            return BadRequest(new { error = exception.Message });
+        }
+    }
+
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<OrderSummaryDto>>> GetByDate(
         [FromQuery] DateOnly? date,
