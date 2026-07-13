@@ -80,6 +80,9 @@ public sealed class AdminDashboardServiceTests
                 ? orders.Where(order => order.Status == status.Value).ToList()
                 : orders);
 
+        public Task<int> GetMaxOrderNumberCounterAsync(string persianYearPrefix, CancellationToken cancellationToken = default) =>
+            Task.FromResult(0);
+
         public Task AddAsync(Order order, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
     }

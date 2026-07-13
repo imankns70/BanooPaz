@@ -4,6 +4,7 @@ using BanooPaz.WPF.ViewModels;
 using BanooPaz.WPF.Converters;
 using BanooPaz.Contracts.Foods;
 using BanooPaz.Contracts.Menus;
+using BanooPaz.Contracts.Orders;
 
 namespace BanooPaz.Admin.UnitTests;
 
@@ -326,6 +327,32 @@ public sealed class AdminViewModelValidationTests
         Assert.Equal("150,000", text);
     }
 
+    [Fact]
+    public void Manual_order_add_does_not_increase_existing_food_quantity()
+    {
+        var viewModel = new ManualOrderViewModel(new FakeDailyMenusApiClient(), new FakeOrdersApiClient());
+        var menuItem = new DailyMenuItemDto
+        {
+            Id = 10,
+            FoodId = 1,
+            FoodName = "قیمه",
+            Price = 150_000,
+            RemainingPortions = 10,
+            IsAvailable = true
+        };
+        viewModel.MenuItems.Add(new SelectOption<DailyMenuItemDto>(menuItem, "قیمه"));
+        viewModel.SelectedMenuItem = viewModel.MenuItems.Single();
+        viewModel.QuantityToAdd = 2;
+
+        viewModel.AddItemCommand.Execute(null);
+        viewModel.QuantityToAdd = 3;
+        viewModel.AddItemCommand.Execute(null);
+
+        var line = Assert.Single(viewModel.Lines);
+        Assert.Equal(2, line.Quantity);
+        Assert.Contains("قبلاً", viewModel.ErrorMessage);
+    }
+
     private static DailyMenuViewModel CreateDailyMenuViewModel(
         FakeDailyMenusApiClient? menusApi = null,
         FakeFoodsApiClient? foodsApi = null) =>
@@ -449,5 +476,23 @@ public sealed class AdminViewModelValidationTests
         }
 
         public Task SetMenuItemAvailabilityAsync(int dailyMenuItemId, bool isAvailable, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    }
+
+    private sealed class FakeOrdersApiClient : IOrdersApiClient
+    {
+        public Task<IReadOnlyList<OrderSummaryDto>> GetOrdersAsync(
+            DateOnly date,
+            OrderStatus? status = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<OrderSummaryDto>>([]);
+
+        public Task<OrderDto?> GetOrderAsync(int id, CancellationToken cancellationToken = default) =>
+            Task.FromResult<OrderDto?>(null);
+
+        public Task<OrderDto> CreateOrderAsync(CreateOrderRequest request, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new OrderDto { Id = 1, OrderNumber = "TEST-1" });
+
+        public Task UpdateStatusAsync(int id, UpdateOrderStatusRequest request, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 }

@@ -141,6 +141,20 @@ public sealed class OrderServiceTests
         Assert.Equal("09160000000", orderRepository.Added!.DeliveryPhoneNumber);
     }
 
+    [Fact]
+    public async Task Create_generates_order_number_from_persian_year_and_next_counter()
+    {
+        var profile = new CustomerProfile { Id = 12 };
+        var orderRepository = new FakeOrderRepository { MaxOrderCounter = 2 };
+        var service = CreateOrderService(profile, orderRepository);
+
+        var result = await service.CreateAdminAsync(CreateRequest());
+
+        Assert.StartsWith("1405", result.OrderNumber);
+        Assert.Equal("14053", result.OrderNumber);
+        Assert.Equal("1405", orderRepository.LastOrderNumberPrefix);
+    }
+
     private static CreateOrderRequest CreateRequest() => new()
     {
         TelegramUserId = 123,
@@ -207,9 +221,17 @@ public sealed class OrderServiceTests
     private sealed class FakeOrderRepository(Order? order = null) : IOrderRepository
     {
         public Order? Added { get; private set; }
+        public int MaxOrderCounter { get; init; }
+        public string? LastOrderNumberPrefix { get; private set; }
         public Task<Order?> GetByIdAsync(int id, CancellationToken cancellationToken = default) => Task.FromResult(order);
         public Task<Order?> GetByIdWithDetailsAsync(int id, CancellationToken cancellationToken = default) => Task.FromResult(order);
         public Task<IReadOnlyList<Order>> GetByDateAsync(DateOnly date, DomainOrderStatus? status = null, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<Order>>(order is null ? [] : [order]);
+        public Task<int> GetMaxOrderNumberCounterAsync(string persianYearPrefix, CancellationToken cancellationToken = default)
+        {
+            LastOrderNumberPrefix = persianYearPrefix;
+            return Task.FromResult(MaxOrderCounter);
+        }
+
         public Task AddAsync(Order newOrder, CancellationToken cancellationToken = default)
         {
             Added = newOrder;

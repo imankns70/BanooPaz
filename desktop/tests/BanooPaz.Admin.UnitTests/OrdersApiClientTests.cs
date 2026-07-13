@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -22,6 +23,37 @@ public sealed class OrdersApiClientTests
         Assert.Equal(
             "https://localhost:5001/api/admin/orders?date=2026-07-03&status=2",
             handler.RequestUri?.ToString());
+    }
+
+    [Fact]
+    public async Task GetOrders_uses_gregorian_date_when_current_culture_is_persian()
+    {
+        var originalCulture = CultureInfo.CurrentCulture;
+        var originalUiCulture = CultureInfo.CurrentUICulture;
+        try
+        {
+            var persianCulture = (CultureInfo)CultureInfo.GetCultureInfo("fa-IR").Clone();
+            persianCulture.DateTimeFormat.Calendar = new PersianCalendar();
+            CultureInfo.CurrentCulture = persianCulture;
+            CultureInfo.CurrentUICulture = persianCulture;
+
+            var handler = new StubHandler(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("[]", Encoding.UTF8, "application/json")
+            });
+            var client = CreateClient(handler);
+
+            await client.GetOrdersAsync(new DateOnly(2026, 7, 3), OrderStatus.Confirmed);
+
+            Assert.Equal(
+                "https://localhost:5001/api/admin/orders?date=2026-07-03&status=2",
+                handler.RequestUri?.ToString());
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = originalCulture;
+            CultureInfo.CurrentUICulture = originalUiCulture;
+        }
     }
 
     [Fact]

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Text;
 using BanooPaz.WPF.Services.Api;
@@ -31,6 +32,35 @@ public sealed class AdminApiClientTests
         Assert.Equal(
             "https://localhost:5001/api/admin/daily-menus/by-date/2026-07-04",
             handler.RequestUri?.ToString());
+    }
+
+    [Fact]
+    public async Task GetDailyMenu_uses_gregorian_route_when_current_culture_is_persian()
+    {
+        var originalCulture = CultureInfo.CurrentCulture;
+        var originalUiCulture = CultureInfo.CurrentUICulture;
+        try
+        {
+            var persianCulture = (CultureInfo)CultureInfo.GetCultureInfo("fa-IR").Clone();
+            persianCulture.DateTimeFormat.Calendar = new PersianCalendar();
+            CultureInfo.CurrentCulture = persianCulture;
+            CultureInfo.CurrentUICulture = persianCulture;
+
+            var handler = new StubHandler(new HttpResponseMessage(HttpStatusCode.NotFound));
+            var client = new DailyMenusApiClient(CreateHttpClient(handler));
+
+            var menu = await client.GetMenuByDateAsync(new DateOnly(2026, 7, 4));
+
+            Assert.Null(menu);
+            Assert.Equal(
+                "https://localhost:5001/api/admin/daily-menus/by-date/2026-07-04",
+                handler.RequestUri?.ToString());
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = originalCulture;
+            CultureInfo.CurrentUICulture = originalUiCulture;
+        }
     }
 
     [Fact]

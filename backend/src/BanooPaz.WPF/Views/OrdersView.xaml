@@ -7,6 +7,45 @@
     <UserControl.Resources>
         <converters:OrderStatusToPersianConverter x:Key="OrderStatusConverter" />
         <converters:DeliveryMethodToPersianConverter x:Key="DeliveryMethodConverter" />
+        <converters:OrderStatusActionVisibilityConverter x:Key="OrderStatusActionVisibilityConverter" />
+        <Style x:Key="SwitchToggleStyle" TargetType="ToggleButton">
+            <Setter Property="Width" Value="56" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="Track"
+                                Background="#D8C6BD"
+                                CornerRadius="14"
+                                Padding="3">
+                            <Grid>
+                                <Ellipse x:Name="Thumb"
+                                         Width="22"
+                                         Height="22"
+                                         Fill="White"
+                                         HorizontalAlignment="Left">
+                                    <Ellipse.Effect>
+                                        <DropShadowEffect BlurRadius="5"
+                                                          ShadowDepth="1"
+                                                          Opacity="0.25" />
+                                    </Ellipse.Effect>
+                                </Ellipse>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Track" Property="Background" Value="#2F7D46" />
+                                <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Track" Property="Opacity" Value="0.55" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
@@ -21,14 +60,25 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
             <Border Background="White" CornerRadius="8" Padding="12" Margin="0,0,0,10">
-                <DockPanel LastChildFill="False">
+                <WrapPanel VerticalAlignment="Center">
                     <TextBlock Text="تاریخ:" VerticalAlignment="Center" Margin="0,0,6,0" />
                     <controls:PersianDatePicker SelectedDate="{Binding SelectedDate, Mode=TwoWay}" Margin="0,0,14,0" />
                     <TextBlock Text="وضعیت:" VerticalAlignment="Center" Margin="0,0,6,0" />
                     <ComboBox ItemsSource="{Binding StatusFilters}"
                               SelectedItem="{Binding SelectedStatusFilter}"
                               DisplayMemberPath="DisplayName" Width="170" Margin="0,0,14,0" />
-                    <Button Content="بارگذاری / تازه‌سازی" Command="{Binding RefreshCommand}" />
+                    <TextBlock Text="شماره سفارش:" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <TextBox Text="{Binding OrderNumberSearch, UpdateSourceTrigger=PropertyChanged}"
+                             Width="120"
+                             Margin="0,0,14,0" />
+                    <Button Content="جستجو" Command="{Binding RefreshCommand}" Margin="0,0,10,0" />
+                    <TextBlock Text="تازه‌سازی خودکار"
+                               VerticalAlignment="Center"
+                               Margin="0,0,6,0" />
+                    <ToggleButton Style="{StaticResource SwitchToggleStyle}"
+                                  IsChecked="{Binding IsAutoRefreshEnabled, Mode=TwoWay}"
+                                  VerticalAlignment="Center"
+                                  Margin="0,0,14,0" />
                     <TextBlock Text="در حال دریافت..." Foreground="#8B3A3A" FontWeight="SemiBold"
                                Margin="12,0" VerticalAlignment="Center">
                         <TextBlock.Style>
@@ -42,7 +92,7 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                </DockPanel>
+                </WrapPanel>
             </Border>
             <StackPanel Grid.Row="1" Margin="0,0,0,8">
                 <TextBlock Text="{Binding ErrorMessage}" Foreground="#B00020" TextWrapping="Wrap" />
@@ -60,6 +110,35 @@
                     <DataGridTextColumn Header="روش دریافت" Binding="{Binding DeliveryMethod, Converter={StaticResource DeliveryMethodConverter}}" Width="95" />
                     <DataGridTextColumn Header="زمان ثبت" Binding="{Binding CreatedAt, StringFormat={}{0:g}}" Width="125" />
                     <DataGridTextColumn Header="تعداد" Binding="{Binding TotalQuantity}" Width="60" />
+                    <DataGridTemplateColumn Header="عملیات" Width="185">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" FlowDirection="RightToLeft">
+                                    <Button Content="تایید"
+                                            Padding="8,3"
+                                            Margin="2,0"
+                                            Background="#2F7D46"
+                                            Visibility="{Binding Status, Converter={StaticResource OrderStatusActionVisibilityConverter}, ConverterParameter=Confirm}"
+                                            Command="{Binding DataContext.ConfirmOrderCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}" />
+                                    <Button Content="تحویل"
+                                            Padding="8,3"
+                                            Margin="2,0"
+                                            Background="#4D6FA9"
+                                            Visibility="{Binding Status, Converter={StaticResource OrderStatusActionVisibilityConverter}, ConverterParameter=Deliver}"
+                                            Command="{Binding DataContext.SetDeliveredCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}" />
+                                    <Button Content="لغو"
+                                            Padding="8,3"
+                                            Margin="2,0"
+                                            Background="#A51D2D"
+                                            Visibility="{Binding Status, Converter={StaticResource OrderStatusActionVisibilityConverter}, ConverterParameter=Cancel}"
+                                            Command="{Binding DataContext.CancelOrderCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
                 </DataGrid.Columns>
             </DataGrid>
         </Grid>

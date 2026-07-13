@@ -68,6 +68,7 @@
                     <DataGridTextColumn Header="ظرفیت پرس" Binding="{Binding CapacityPortions}" Width="120"/>
                     <DataGridTextColumn Header="فروخته‌شده" Binding="{Binding SoldPortions}" IsReadOnly="True" Width="110"/>
                     <DataGridTextColumn Header="باقی‌مانده" Binding="{Binding RemainingPortions}" IsReadOnly="True" Width="110"/>
+                    <DataGridCheckBoxColumn Header="فعال" Binding="{Binding IsAvailable}" IsReadOnly="True" Width="75"/>
                     <DataGridTemplateColumn Header="عملیات" Width="170">
                         <DataGridTemplateColumn.CellTemplate><DataTemplate>
                             <WrapPanel HorizontalAlignment="Center" VerticalAlignment="Center">
