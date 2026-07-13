@@ -1,14 +1,16 @@
 # Project state
 
 - Status: WPF admin dashboard, identity, customer profiles, and reusable addresses
-- Brand: BanooPaz / بانوپز
+- Brand: Kafgir / کفگیر
 - City: Andimeshk / اندیمشک
 - Sales model: Per portion
 - Backend: ASP.NET Core Web API, SQL Server, EF Core, and .NET Worker Service
+- Development SQL can now be overridden per machine with ignored `appsettings.local.json` or `appsettings.Development.local.json` files in the API and Worker projects.
+- The shared Development config still defaults to Docker SQL Server on `localhost:1433` for `KafgirDb`.
 - Admin: WPF desktop application communicating only with the API
-- WPF project location: `backend/src/BanooPaz.WPF`, beside the other source projects
+- WPF project location: `backend/src/Kafgir.WPF`, beside the other source projects
 - WPF embeds and uses Vazir as the default UI font.
-- WPF login uses a food-themed background image stored in `backend/src/BanooPaz.WPF/Assets/login-food-background.png`.
+- WPF login uses a food-themed background image stored in `backend/src/Kafgir.WPF/Assets/login-food-background.png`.
 - WPF checks API reachability through `/api/health` when the login screen opens and shows a retryable message if the server is unavailable.
 - WPF uses `fa-IR` with `PersianCalendar` for date/time display and a custom Persian date picker for admin date inputs.
 - WPF admin navigation uses a right sidebar shell instead of top tabs.
@@ -37,6 +39,7 @@
 - Payment method is currently a contracts enum, not a database table; no payment gateway exists yet.
 - Customer: React + TypeScript + Vite Telegram Mini App
 - Architecture: Pragmatic Clean Architecture with the API as the central integration point
+- API Swagger UI is the default Development landing page at the API root.
 - Current scope: Domain and persistence foundation plus Food, Daily Menu, and Order APIs
 - MVP foods: زرشک‌پلو با مرغ، قورمه‌سبزی، ماکارونی، قیمه
 - MVP business entities cover customer profiles, reusable addresses, foods, daily menus, orders, and settings.
@@ -73,4 +76,4 @@
 - `NotificationMessages` outbox added for Telegram notifications.
 - Order submission enqueues an admin Telegram notification when `Telegram:AdminChatId` is configured.
 - Order status changes enqueue customer Telegram notifications when the customer has a Telegram user ID.
-- `BanooPaz.Worker` processes pending notification messages with retry/backoff and sends them through Telegram Bot API `sendMessage`.
+- `Kafgir.Worker` processes pending notification messages with retry/backoff and sends them through Telegram Bot API `sendMessage`.

@@ -1,12 +1,12 @@
 # WPF admin application
 
-The WPF application gives admins a desktop interface for operating BanooPaz.
+The WPF application gives admins a desktop interface for operating Kafgir.
 
-The WPF app project lives at `backend/src/BanooPaz.WPF` so it sits beside the other source projects. The desktop solution at `desktop/BanooPaz.Desktop.sln` remains available for desktop-focused builds and tests.
+The WPF app project lives at `backend/src/Kafgir.WPF` so it sits beside the other source projects.
 
-The WPF app embeds the Vazir font from `backend/src/BanooPaz.WPF/Fonts/Vazir` and applies it as the default app font for Persian UI readability.
+The WPF app embeds the Vazir font from `backend/src/Kafgir.WPF/Fonts/Vazir` and applies it as the default app font for Persian UI readability.
 
-The login screen uses a food-themed background image stored at `backend/src/BanooPaz.WPF/Assets/login-food-background.png` with a soft overlay to keep the login card readable.
+The login screen uses a food-themed background image stored at `backend/src/Kafgir.WPF/Assets/login-food-background.png` with a soft overlay to keep the login card readable.
 
 The WPF app configures `fa-IR` with `PersianCalendar` at startup and uses a custom Persian date picker for admin date inputs. The picker exposes Persian year, Persian month names, and Persian days while the API contracts continue to use normal `DateTime`/`DateOnly` values internally.
 

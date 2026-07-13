@@ -32,6 +32,6 @@ Validated Telegram user and chat metadata is stored in the `TelegramAccounts` ta
 
 Set `Telegram:BotToken` from BotFather in a secure configuration source. `Telegram:InitDataMaxAgeMinutes` controls freshness; the default is 1440 minutes. Missing `initData` is rejected outside the Development environment. In Development, missing `initData` can fall back to raw Mini App user fields only when `Telegram:RequireInitData` is `false`.
 
-For notifications, the same bot token is used by `BanooPaz.Worker` to call Telegram Bot API `sendMessage`. Customers must have opened or interacted with the bot before Telegram allows the bot to send them direct messages.
+For notifications, the same bot token is used by `Kafgir.Worker` to call Telegram Bot API `sendMessage`. Customers must have opened or interacted with the bot before Telegram allows the bot to send them direct messages.
 
 Set `Telegram:AdminChatId` to a private admin chat, group, or channel ID to receive order-submitted notifications. If it is empty, admin notification enqueueing is skipped.

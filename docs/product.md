@@ -2,7 +2,7 @@
 
 ## Vision
 
-BanooPaz (بانوپز) brings carefully prepared homemade meals to customers in Andimeshk. The brand is inspired by food made with love and in memory of mother. Suggested slogan: **بانوپز؛ غذای خونگی، با عشق**.
+Kafgir (کفگیر) brings carefully prepared homemade meals to customers in Andimeshk. The brand is inspired by food made with love and in memory of mother. Suggested slogan: **کفگیر؛ غذای خونگی، با عشق**.
 
 ## Users and MVP
 

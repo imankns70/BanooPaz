@@ -36,6 +36,7 @@
 - [x] Add Worker notification queue
 - [x] Add Telegram order/status notifications
 - [x] Add Swagger UI to API
+- [x] Make Swagger UI the default API Development route
 - [x] Add WPF startup API reachability check
 - [x] Configure WPF Persian calendar display
 - [x] Change WPF admin layout to right sidebar navigation
@@ -52,4 +53,7 @@
 - [x] Preserve unsaved Daily Menu rows during sidebar navigation
 - [x] Make Daily Menu price separator formatting deterministic
 - [x] Change WPF Daily Menu add flow to immediate API persistence
+- [x] Rename brand to Kafgir
+- [x] Configure development connection strings for Docker SQL Server
+- [x] Add per-machine local connection string override support for API and Worker
 - [ ] Add AI food image generation workflow

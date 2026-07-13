@@ -1,0 +1,75 @@
+<UserControl x:Class="Kafgir.WPF.Views.OrderDetailsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:Kafgir.WPF.Converters"
+             FlowDirection="RightToLeft">
+    <UserControl.Resources>
+        <converters:OrderStatusToPersianConverter x:Key="OrderStatusConverter" />
+        <converters:PaymentMethodToPersianConverter x:Key="PaymentMethodConverter" />
+        <converters:DeliveryMethodToPersianConverter x:Key="DeliveryMethodConverter" />
+    </UserControl.Resources>
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel DataContext="{Binding}">
+            <TextBlock Text="جزئیات سفارش" FontSize="20" FontWeight="SemiBold" Foreground="#6D2E2E" Margin="0,0,0,12" />
+            <TextBlock Text="برای مشاهده جزئیات، یک سفارش را انتخاب کنید." Foreground="#777" Margin="0,4,0,12">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Details.Order}" Value="{x:Null}">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+            <Grid DataContext="{Binding Details.Order}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <TextBlock Text="شماره سفارش:" FontWeight="Bold" Margin="0,3,0,3" /><TextBlock Grid.Column="1" Text="{Binding OrderNumber}" Margin="8,3" />
+                <TextBlock Grid.Row="1" Text="نام مشتری:" FontWeight="Bold" Margin="0,3" /><TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding CustomerFullName}" Margin="8,3" />
+                <TextBlock Grid.Row="2" Text="شماره تماس:" FontWeight="Bold" Margin="0,3" /><TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding CustomerPhoneNumber}" Margin="8,3" />
+                <TextBlock Grid.Row="3" Text="آدرس:" FontWeight="Bold" Margin="0,3" /><TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding AddressLine}" TextWrapping="Wrap" Margin="8,3" />
+                <TextBlock Grid.Row="4" Text="توضیح مشتری:" FontWeight="Bold" Margin="0,3" /><TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding CustomerNote}" TextWrapping="Wrap" Margin="8,3" />
+                <TextBlock Grid.Row="5" Text="توضیح ادمین:" FontWeight="Bold" Margin="0,3" /><TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding AdminNote}" TextWrapping="Wrap" Margin="8,3" />
+                <TextBlock Grid.Row="6" Text="وضعیت:" FontWeight="Bold" Margin="0,3" /><TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding Status, Converter={StaticResource OrderStatusConverter}}" Margin="8,3" />
+                <TextBlock Grid.Row="7" Text="روش پرداخت:" FontWeight="Bold" Margin="0,3" /><TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding PaymentMethod, Converter={StaticResource PaymentMethodConverter}}" Margin="8,3" />
+                <TextBlock Grid.Row="8" Text="مبلغ کل:" FontWeight="Bold" Margin="0,3" /><TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding TotalAmount, StringFormat={}{0:N0}}" Margin="8,3" />
+            </Grid>
+
+            <TextBlock Text="اقلام سفارش" FontSize="16" FontWeight="SemiBold" Margin="0,16,0,6" />
+            <DataGrid ItemsSource="{Binding Details.Order.Items}" Height="145">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="غذا" Binding="{Binding FoodName}" Width="*" />
+                    <DataGridTextColumn Header="تعداد" Binding="{Binding Quantity}" Width="55" />
+                    <DataGridTextColumn Header="قیمت واحد" Binding="{Binding UnitPrice, StringFormat={}{0:N0}}" Width="90" />
+                    <DataGridTextColumn Header="جمع" Binding="{Binding TotalPrice, StringFormat={}{0:N0}}" Width="90" />
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <TextBlock Text="تاریخچه وضعیت" FontSize="16" FontWeight="SemiBold" Margin="0,16,0,6" />
+            <DataGrid ItemsSource="{Binding Details.Order.StatusHistories}" Height="135">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="از" Binding="{Binding FromStatus, Converter={StaticResource OrderStatusConverter}}" Width="*" />
+                    <DataGridTextColumn Header="به" Binding="{Binding ToStatus, Converter={StaticResource OrderStatusConverter}}" Width="*" />
+                    <DataGridTextColumn Header="زمان" Binding="{Binding ChangedAt, StringFormat={}{0:g}}" Width="110" />
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <WrapPanel Margin="0,14,0,0">
+                <Button Content="تایید سفارش" Command="{Binding ConfirmOrderCommand}" />
+                <Button Content="در حال آماده‌سازی" Command="{Binding SetPreparingCommand}" />
+                <Button Content="آماده تحویل" Command="{Binding SetReadyCommand}" />
+                <Button Content="تحویل شد" Command="{Binding SetDeliveredCommand}" />
+                <Button Content="لغو سفارش" Command="{Binding CancelOrderCommand}" Background="#A51D2D" />
+            </WrapPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

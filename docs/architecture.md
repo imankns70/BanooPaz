@@ -6,15 +6,15 @@ The backend API is the central integration point. Both customer and admin client
 Telegram Mini App
         |
         v
-BanooPaz.Api
+Kafgir.Api
         |
         v
 SQL Server
         ^
         |
-BanooPaz.WPF
+Kafgir.WPF
 
-BanooPaz.Worker -> SQL Server outbox -> Telegram Bot API
+Kafgir.Worker -> SQL Server outbox -> Telegram Bot API
 ```
 
 The codebase follows Clean Architecture pragmatically: Domain contains business concepts, Application coordinates use cases, Contracts carries shared transport models, and Infrastructure implements external concerns.
@@ -25,7 +25,7 @@ Admin endpoints use the `/api/admin/...` route prefix and require a valid JWT fo
 
 Customer menu reading uses the public `GET /api/menus/today` endpoint. Returning customer preload uses `POST /api/customers/me`, validates Telegram identity, and returns the saved profile plus active addresses when present. Customer order submission uses `POST /api/orders`. Admin dashboard summary uses `GET /api/admin/dashboard/today`; admin manual order creation uses `POST /api/admin/orders`; and admin order listing, details, and status changes use `/api/admin/orders` routes. All route groups call Application services; clients never access persistence directly.
 
-`BanooPaz.Worker` processes pending `NotificationMessages` from the database outbox. Order submission enqueues an admin Telegram notification when `Telegram:AdminChatId` is configured. Order status changes enqueue customer Telegram notifications when the customer has a Telegram user ID. The Worker sends messages through Telegram Bot API `sendMessage`, marks successful messages as sent, and retries failures with backoff until the configured retry limit is reached.
+`Kafgir.Worker` processes pending `NotificationMessages` from the database outbox. Order submission enqueues an admin Telegram notification when `Telegram:AdminChatId` is configured. Order status changes enqueue customer Telegram notifications when the customer has a Telegram user ID. The Worker sends messages through Telegram Bot API `sendMessage`, marks successful messages as sent, and retries failures with backoff until the configured retry limit is reached.
 
 Users and roles are managed by ASP.NET Core Identity with integer keys. Identity implementation details live in Infrastructure; `CustomerProfile` and `CustomerAddress` remain business entities linked through `CustomerProfile.UserId`. WPF admin authentication is API-based through `/api/auth/admin/login` and JWT. The WPF login screen includes a password hide/show toggle, stores the JWT in memory after successful login, and sends it on protected admin API calls as an `Authorization: Bearer ...` header.
 

@@ -1,6 +1,6 @@
 # Architecture decisions
 
-- Brand: BanooPaz / بانوپز
+- Brand: Kafgir / کفگیر
 - Database: SQL Server instead of PostgreSQL
 - Admin client: WPF for now
 - Customer client: Telegram Mini App

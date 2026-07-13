@@ -1,6 +1,6 @@
 # Database
 
-The initial SQL Server schema is represented by `InitialBanooPazSchema`, followed by `AddIdentityCustomerProfilesAndAddresses`. The current model includes:
+The initial SQL Server schema is represented by `InitialKafgirSchema`, followed by `AddIdentityCustomerProfilesAndAddresses`. The current model includes:
 
 - ASP.NET Core Identity tables (`AspNetUsers`, `AspNetRoles`, claims, logins, tokens, and user roles)
 - TelegramAccounts

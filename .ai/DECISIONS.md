@@ -1,9 +1,11 @@
 # Decisions
 
-- The brand name is BanooPaz / بانوپز and the product is built in memory of mother.
+- The brand name is Kafgir / کفگیر and the product is built in memory of mother.
 - SQL Server is selected as the database.
+- Local development SQL Server runs in Docker on `localhost:1433` and uses explicit SQL-auth connection strings in Development settings.
+- Per-machine SQL differences are handled through ignored `.local` appsettings overrides in API and Worker so tracked Development config can stay Docker-friendly.
 - WPF is selected for the admin application.
-- The WPF admin project lives under `backend/src/BanooPaz.WPF` beside the other source projects; desktop tests and the desktop solution remain under `desktop/`.
+- The WPF admin project lives under `backend/src/Kafgir.WPF` beside the other source projects.
 - A Telegram Mini App is selected for the customer application.
 - The backend API is the central integration point.
 - WPF must not connect directly to SQL Server.
@@ -20,7 +22,7 @@
 - Admin confirmation increases `SoldPortions`, while cancellation after confirmation restores those portions.
 - Order confirmation and cancellation persist order status, history, timestamps, and capacity in one save operation.
 - Swagger/OpenAPI is enabled for the API in Development because it was explicitly requested.
-- Swagger UI uses Swashbuckle and includes JWT Bearer authorization support for testing protected admin endpoints.
+- Swagger UI uses Swashbuckle, includes JWT Bearer authorization support for testing protected admin endpoints, and is served from the API root in Development.
 - Daily menu date is unique.
 - A food can appear only once in a given daily menu.
 - Existing daily menus with items cannot be cleared by an empty save; this guards against UI load failures wiping unsold items.
@@ -35,7 +37,7 @@
 - Returning customer profile preload uses `POST /api/customers/me` with Telegram `initData`; it never exposes profile lookup by an unvalidated Telegram ID in production.
 - Customer addresses are reusable, while every order keeps independent delivery snapshots.
 - Notifications use a database outbox (`NotificationMessages`) so order changes and notification enqueueing are saved together.
-- Telegram notification delivery is handled by `BanooPaz.Worker` through Bot API `sendMessage`, with retry/backoff and failed-message tracking.
+- Telegram notification delivery is handled by `Kafgir.Worker` through Bot API `sendMessage`, with retry/backoff and failed-message tracking.
 - Admin order-submitted notifications require `Telegram:AdminChatId`; customer notifications use the validated Telegram user ID as the Telegram chat target.
 - Public order enums live in Contracts so client projects do not depend on Domain.
 - Payment method (`روش پرداخت`) remains an enum for now, not a database lookup table.
