@@ -13,9 +13,14 @@
 - WPF login uses a food-themed background image stored in `backend/src/Kafgir.WPF/Assets/login-food-background.png`.
 - WPF checks API reachability through `/api/health` when the login screen opens and shows a retryable message if the server is unavailable.
 - WPF uses `fa-IR` with `PersianCalendar` for date/time display and a custom Persian date picker for admin date inputs.
+- WPF API clients serialize date route/query values with invariant Gregorian `yyyy-MM-dd` formatting so Persian UI culture does not leak into backend filters.
 - WPF admin navigation uses a right sidebar shell instead of top tabs.
 - WPF admin includes a manual order page for admin-entered phone/in-person orders.
 - WPF manual ordering shows active menu foods even when capacity is zero, but prevents adding quantities above remaining capacity.
+- WPF manual ordering uses today's menu without exposing a menu date picker.
+- WPF manual ordering uses `+` and `−` quantity controls for adding foods and editing order-line quantities.
+- WPF manual ordering prevents duplicate `افزودن` clicks from increasing an existing food line; quantity edits happen only through the row controls.
+- WPF manual ordering was reorganized into customer, menu item selection, order lines, and total cards with more visible operation buttons.
 - WPF manual ordering hides city input and sends the default city internally.
 - WPF manual ordering defaults to pickup so admin-created orders do not require an address unless delivery is selected.
 - Admin/manual order phone numbers are normalized before customer/order storage.
@@ -30,6 +35,7 @@
 - WPF Daily Menu add-item modal uses an aligned two-column form, and its `قیمت امروز` field applies thousands separators while typing.
 - WPF Daily Menu rows have `ویرایش`; edit mode reuses the modal, locks food selection, and updates daily price/capacity/active state through a single-item API.
 - WPF Daily Menu no longer has a row-level `تغییر وضعیت` button; active state is changed only through the edit modal's `فعال است؟` checkbox.
+- WPF Daily Menu grid shows a read-only `فعال` column for item active state.
 - Daily menu delete checks whether the daily item is referenced by any order item before removal, not only whether `SoldPortions` is greater than zero.
 - The WPF Daily Menu grid is read-only for price/capacity edits in the current flow; item changes happen through explicit add, status, and delete actions.
 - The legacy full-menu replacement API rejects empty item-list saves for an existing menu with items to prevent accidental deletion.
@@ -49,6 +55,10 @@
 - Daily menu admin APIs have been implemented with additive item upserts, settings-only updates, and single-item deletion.
 - Customer order submission has been implemented.
 - Admin order listing, details, and status management have been implemented.
+- Order numbers use Persian business year plus yearly counter, e.g. `14051`, `14052`, then `14061` for the next Persian year.
+- Admin order date filters use Iran business-day boundaries against UTC order timestamps.
+- WPF refreshes the Orders page whenever admins navigate back to it, so newly created manual orders are shown without waiting for stale navigation state.
+- WPF Orders has a `جستجو` button, order-number search input, switch-style auto-refresh toggle, and row-level actions for `تایید`, `تحویل`, and `لغو`; `تحویل` appears only after confirmation.
 - Daily menu capacity changes only when an order is confirmed or a confirmed order is cancelled.
 - The WPF admin now has a configured HTTP API client for order operations.
 - The WPF orders screen supports date/status filtering, automatic refresh, and order selection.

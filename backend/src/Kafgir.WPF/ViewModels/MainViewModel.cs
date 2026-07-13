@@ -13,7 +13,6 @@ public sealed class MainViewModel(
     private bool _isAuthenticated;
     private int _selectedNavigationIndex;
     private bool _dashboardLoaded;
-    private bool _ordersLoaded;
     private bool _foodsLoaded;
 
     public LoginViewModel Login { get; } = login;
@@ -61,8 +60,7 @@ public sealed class MainViewModel(
                 _dashboardLoaded = true;
                 Dashboard.LoadCommand.Execute(null);
                 break;
-            case 1 when !_ordersLoaded:
-                _ordersLoaded = true;
+            case 1:
                 Orders.RefreshCommand.Execute(null);
                 break;
             case 2:

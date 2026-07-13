@@ -17,6 +17,8 @@ public sealed class OrdersViewModel : ObservableObject, IDisposable
     private OrderStatusFilterOption _selectedStatusFilter;
     private OrderSummaryDto? _selectedOrder;
     private bool _isBusy;
+    private bool _isAutoRefreshEnabled = true;
+    private string? _orderNumberSearch;
     private string? _errorMessage;
     private string? _successMessage;
 
@@ -39,8 +41,6 @@ public sealed class OrdersViewModel : ObservableObject, IDisposable
         RefreshCommand = new AsyncRelayCommand(LoadOrdersAsync, () => !IsBusy);
         LoadOrderDetailsCommand = new AsyncRelayCommand(LoadOrderDetailsAsync, CanUseSelectedOrder);
         ConfirmOrderCommand = CreateStatusCommand(OrderStatus.Confirmed);
-        SetPreparingCommand = CreateStatusCommand(OrderStatus.Preparing);
-        SetReadyCommand = CreateStatusCommand(OrderStatus.Ready);
         SetDeliveredCommand = CreateStatusCommand(OrderStatus.Delivered);
         CancelOrderCommand = CreateStatusCommand(OrderStatus.Cancelled);
 
@@ -112,14 +112,39 @@ public sealed class OrdersViewModel : ObservableObject, IDisposable
         private set => SetProperty(ref _successMessage, value);
     }
 
+    public bool IsAutoRefreshEnabled
+    {
+        get => _isAutoRefreshEnabled;
+        set
+        {
+            if (!SetProperty(ref _isAutoRefreshEnabled, value))
+            {
+                return;
+            }
+
+            if (value)
+            {
+                StartPolling();
+            }
+            else
+            {
+                _pollTimer.Stop();
+            }
+        }
+    }
+
+    public string? OrderNumberSearch
+    {
+        get => _orderNumberSearch;
+        set => SetProperty(ref _orderNumberSearch, value);
+    }
+
     public IAsyncRelayCommand LoadOrdersCommand { get; }
     public IAsyncRelayCommand RefreshCommand { get; }
     public IAsyncRelayCommand LoadOrderDetailsCommand { get; }
-    public IAsyncRelayCommand ConfirmOrderCommand { get; }
-    public IAsyncRelayCommand SetPreparingCommand { get; }
-    public IAsyncRelayCommand SetReadyCommand { get; }
-    public IAsyncRelayCommand SetDeliveredCommand { get; }
-    public IAsyncRelayCommand CancelOrderCommand { get; }
+    public IAsyncRelayCommand<OrderSummaryDto?> ConfirmOrderCommand { get; }
+    public IAsyncRelayCommand<OrderSummaryDto?> SetDeliveredCommand { get; }
+    public IAsyncRelayCommand<OrderSummaryDto?> CancelOrderCommand { get; }
 
     public void Dispose()
     {
@@ -129,14 +154,16 @@ public sealed class OrdersViewModel : ObservableObject, IDisposable
 
     public void StartPolling()
     {
-        if (!_pollTimer.IsEnabled)
+        if (IsAutoRefreshEnabled && !_pollTimer.IsEnabled)
         {
             _pollTimer.Start();
         }
     }
 
-    private IAsyncRelayCommand CreateStatusCommand(OrderStatus status) =>
-        new AsyncRelayCommand(() => UpdateStatusAsync(status), CanUseSelectedOrder);
+    private IAsyncRelayCommand<OrderSummaryDto?> CreateStatusCommand(OrderStatus status) =>
+        new AsyncRelayCommand<OrderSummaryDto?>(
+            order => UpdateStatusAsync(status, order),
+            order => CanChangeOrderStatus(order, status));
 
     private async Task LoadOrdersAsync()
     {
@@ -154,6 +181,15 @@ public sealed class OrdersViewModel : ObservableObject, IDisposable
             var orders = await _apiClient.GetOrdersAsync(
                 DateOnly.FromDateTime(SelectedDate),
                 SelectedStatusFilter.Value);
+            var normalizedOrderNumberSearch = OrderNumberSearch?.Trim();
+            if (!string.IsNullOrWhiteSpace(normalizedOrderNumberSearch))
+            {
+                orders = orders
+                    .Where(order => order.OrderNumber.Contains(
+                        normalizedOrderNumberSearch,
+                        StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
 
             Orders.Clear();
             foreach (var order in orders)
@@ -215,14 +251,15 @@ public sealed class OrdersViewModel : ObservableObject, IDisposable
         }
     }
 
-    private async Task UpdateStatusAsync(OrderStatus status)
+    private async Task UpdateStatusAsync(OrderStatus status, OrderSummaryDto? order)
     {
-        if (SelectedOrder is null || IsBusy)
+        var targetOrder = order ?? SelectedOrder;
+        if (targetOrder is null || IsBusy)
         {
             return;
         }
 
-        var orderId = SelectedOrder.Id;
+        var orderId = targetOrder.Id;
         IsBusy = true;
         ErrorMessage = null;
         SuccessMessage = null;
@@ -254,21 +291,40 @@ public sealed class OrdersViewModel : ObservableObject, IDisposable
 
     private bool CanUseSelectedOrder() => SelectedOrder is not null && !IsBusy;
 
+    private bool CanChangeOrderStatus(OrderSummaryDto? order, OrderStatus targetStatus)
+    {
+        order ??= SelectedOrder;
+        if (order is null || IsBusy)
+        {
+            return false;
+        }
+
+        return (order.Status, targetStatus) switch
+        {
+            (OrderStatus.PendingConfirmation, OrderStatus.Confirmed) => true,
+            (OrderStatus.Confirmed, OrderStatus.Delivered) => true,
+            (OrderStatus.Ready, OrderStatus.Delivered) => true,
+            (OrderStatus.PendingConfirmation, OrderStatus.Cancelled) => true,
+            (OrderStatus.Confirmed, OrderStatus.Cancelled) => true,
+            (OrderStatus.Preparing, OrderStatus.Cancelled) => true,
+            (OrderStatus.Ready, OrderStatus.Cancelled) => true,
+            _ => false
+        };
+    }
+
     private void NotifyCommandStates()
     {
         LoadOrdersCommand?.NotifyCanExecuteChanged();
         RefreshCommand?.NotifyCanExecuteChanged();
         LoadOrderDetailsCommand?.NotifyCanExecuteChanged();
         ConfirmOrderCommand?.NotifyCanExecuteChanged();
-        SetPreparingCommand?.NotifyCanExecuteChanged();
-        SetReadyCommand?.NotifyCanExecuteChanged();
         SetDeliveredCommand?.NotifyCanExecuteChanged();
         CancelOrderCommand?.NotifyCanExecuteChanged();
     }
 
     private void PollTimerOnTick(object? sender, EventArgs e)
     {
-        if (!IsBusy)
+        if (IsAutoRefreshEnabled && !IsBusy)
         {
             RefreshCommand.Execute(null);
         }

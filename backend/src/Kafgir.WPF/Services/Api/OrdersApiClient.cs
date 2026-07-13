@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -12,7 +13,7 @@ public sealed class OrdersApiClient(HttpClient httpClient) : IOrdersApiClient
         OrderStatus? status = null,
         CancellationToken cancellationToken = default)
     {
-        var route = $"api/admin/orders?date={date:yyyy-MM-dd}";
+        var route = $"api/admin/orders?date={FormatApiDate(date)}";
         if (status.HasValue)
         {
             route += $"&status={(int)status.Value}";
@@ -55,4 +56,7 @@ public sealed class OrdersApiClient(HttpClient httpClient) : IOrdersApiClient
             $"api/admin/orders/{id}/status", request, cancellationToken);
         await ApiResponseHandler.EnsureSuccessAsync(response, cancellationToken);
     }
+
+    private static string FormatApiDate(DateOnly date) =>
+        date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 }

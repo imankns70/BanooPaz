@@ -8,7 +8,7 @@ The WPF app embeds the Vazir font from `backend/src/Kafgir.WPF/Fonts/Vazir` and 
 
 The login screen uses a food-themed background image stored at `backend/src/Kafgir.WPF/Assets/login-food-background.png` with a soft overlay to keep the login card readable.
 
-The WPF app configures `fa-IR` with `PersianCalendar` at startup and uses a custom Persian date picker for admin date inputs. The picker exposes Persian year, Persian month names, and Persian days while the API contracts continue to use normal `DateTime`/`DateOnly` values internally.
+The WPF app configures `fa-IR` with `PersianCalendar` at startup and uses a custom Persian date picker for admin date inputs. The picker exposes Persian year, Persian month names, and Persian days while the API contracts continue to use normal `DateTime`/`DateOnly` values internally. Date values sent to backend routes and query strings are always serialized with invariant Gregorian `yyyy-MM-dd` formatting, so Persian display culture does not leak into API filters.
 
 Initial pages:
 
@@ -24,13 +24,17 @@ The WPF application communicates with the backend API and never accesses the dat
 
 The Dashboard screen is implemented as the first tab after login. It loads `GET /api/admin/dashboard/today` and shows today's order totals, status counts, active orders, ordered portions, gross sales excluding cancelled orders, and today's menu state.
 
-The Orders screen is implemented. Admins can load orders by date, optionally filter by status, select an order, and view its customer information, items, totals, and status history. Status actions call the backend API for confirmation, preparation, readiness, delivery, and cancellation. The list also polls the API every 10 seconds without starting another request while a load is active.
+The Orders screen is implemented. Admins can load orders by date with the `جستجو` button, optionally filter by status, search the loaded result by order number, select an order, and view its customer information, items, totals, and status history. Row-level status actions call the backend API for `تایید`, `تحویل`, and `لغو`; `تحویل` is only shown after the order has passed confirmation. The older preparation/readiness buttons are not exposed in WPF. The list can poll the API every 10 seconds without starting another request while a load is active, and admins can disable `تازه‌سازی خودکار` with a switch toggle when selecting rows or changing status.
+
+Order date filtering uses the BanooPaz business day in Iran time while order timestamps remain stored in UTC. The WPF Orders API client sends the selected date as Gregorian `yyyy-MM-dd` even when the UI date picker displays a Persian date. The WPF shell refreshes the Orders page whenever admins navigate back to it, so newly created manual orders are not hidden behind a stale list.
 
 The API base URL is read from the WPF `appsettings.json`; services do not hardcode it. The default development value is `https://localhost:7279`, matching the API HTTPS launch profile.
 
 Navigation now uses a right sidebar shell exposing Dashboard, Orders, Foods, and Daily Menu screens. Admins can manage food identity details and active status from WPF. The Foods page does not expose selling price because price belongs to the selected daily menu. Admins can search daily menus by date, view the selected date's menu items, and manage each food's daily price, portion capacity, and availability through explicit actions. All operations use backend HTTP APIs.
 
-The sidebar also includes a manual order page (`ثبت سفارش`) for admins to create phone/in-person orders from the selected day's active menu items. It posts to the protected admin order endpoint, so it does not require Telegram Mini App identity data. The food ComboBox displays the food name, price, and remaining capacity. Items with zero remaining capacity remain visible for clarity, but the admin cannot add them to an order until capacity is available.
+The sidebar also includes a manual order page (`ثبت سفارش`) for admins to create phone/in-person orders from today's active menu items. It posts to the protected admin order endpoint, so it does not require Telegram Mini App identity data. The food ComboBox displays the food name, price, and remaining capacity. Items with zero remaining capacity remain visible for clarity, but the admin cannot add them to an order until capacity is available.
+
+The manual order page is organized as customer information, menu item selection, order lines, and total cards. It does not expose a menu date picker; manual orders use today's menu. Quantity is controlled with `+` and `−` buttons both before adding a food and inside the order-lines grid. Pressing `افزودن` for a food already in the order shows a message and does not increase the existing line; admins must use the row `+` and `−` controls to change quantity. The order-lines operation button is styled as a visible danger action.
 
 Manual order entry does not show a city field. The app sends the default city (`اندیمشک`) internally. It defaults to pickup (`تحویل حضوری`) so admin-entered orders can be stored without an address; if delivery (`ارسال`) is selected, the address remains required.
 
@@ -48,7 +52,7 @@ Daily-menu settings save is guarded against repeated clicks. While one save is r
 
 After daily-menu settings save, the WPF page applies the stored menu returned by the API so the grid remains aligned with persisted item state.
 
-The daily menu item list is shown in the labeled `آیتم‌های منوی روزانه` grid below the search bar. The grid is read-only for price/capacity editing in the current WPF flow; item changes are handled through explicit action buttons. The add form accepts `قیمت امروز` and `ظرفیت`; the price field displays deterministic comma separators such as `150,000`.
+The daily menu item list is shown in the labeled `آیتم‌های منوی روزانه` grid below the search bar. The grid includes a read-only `فعال` column and is read-only for price/capacity editing; item changes are handled through explicit action buttons. The add form accepts `قیمت امروز` and `ظرفیت`; the price field displays deterministic comma separators such as `150,000`.
 
 Adding a food to the daily menu is immediate persistence, not a local draft. The WPF `افزودن به منو` action calls `POST /api/admin/daily-menus/by-date/{date}/items`, stores the new daily-menu item, and reloads the stored menu so the row has its database ID.
 

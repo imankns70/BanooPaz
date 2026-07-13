@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -12,7 +13,7 @@ public sealed class DailyMenusApiClient(HttpClient httpClient) : IDailyMenusApiC
         CancellationToken cancellationToken = default)
     {
         using var response = await httpClient.GetAsync(
-            $"api/admin/daily-menus/by-date/{date:yyyy-MM-dd}", cancellationToken);
+            $"api/admin/daily-menus/by-date/{FormatApiDate(date)}", cancellationToken);
         if (response.StatusCode == HttpStatusCode.NotFound)
         {
             return null;
@@ -39,7 +40,7 @@ public sealed class DailyMenusApiClient(HttpClient httpClient) : IDailyMenusApiC
         CancellationToken cancellationToken = default)
     {
         using var response = await httpClient.PatchAsJsonAsync(
-            $"api/admin/daily-menus/by-date/{date:yyyy-MM-dd}",
+            $"api/admin/daily-menus/by-date/{FormatApiDate(date)}",
             request,
             cancellationToken);
         await ApiResponseHandler.EnsureSuccessAsync(response, cancellationToken);
@@ -53,7 +54,7 @@ public sealed class DailyMenusApiClient(HttpClient httpClient) : IDailyMenusApiC
         CancellationToken cancellationToken = default)
     {
         using var response = await httpClient.PostAsJsonAsync(
-            $"api/admin/daily-menus/by-date/{date:yyyy-MM-dd}/items",
+            $"api/admin/daily-menus/by-date/{FormatApiDate(date)}/items",
             request,
             cancellationToken);
         await ApiResponseHandler.EnsureSuccessAsync(response, cancellationToken);
@@ -98,4 +99,7 @@ public sealed class DailyMenusApiClient(HttpClient httpClient) : IDailyMenusApiC
             cancellationToken);
         await ApiResponseHandler.EnsureSuccessAsync(response, cancellationToken);
     }
+
+    private static string FormatApiDate(DateOnly date) =>
+        date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 }

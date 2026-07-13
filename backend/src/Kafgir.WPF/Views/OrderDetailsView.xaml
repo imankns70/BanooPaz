@@ -62,14 +62,6 @@
                     <DataGridTextColumn Header="زمان" Binding="{Binding ChangedAt, StringFormat={}{0:g}}" Width="110" />
                 </DataGrid.Columns>
             </DataGrid>
-
-            <WrapPanel Margin="0,14,0,0">
-                <Button Content="تایید سفارش" Command="{Binding ConfirmOrderCommand}" />
-                <Button Content="در حال آماده‌سازی" Command="{Binding SetPreparingCommand}" />
-                <Button Content="آماده تحویل" Command="{Binding SetReadyCommand}" />
-                <Button Content="تحویل شد" Command="{Binding SetDeliveredCommand}" />
-                <Button Content="لغو سفارش" Command="{Binding CancelOrderCommand}" Background="#A51D2D" />
-            </WrapPanel>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

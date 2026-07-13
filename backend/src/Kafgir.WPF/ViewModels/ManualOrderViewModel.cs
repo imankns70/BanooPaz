@@ -50,6 +50,10 @@ public sealed class ManualOrderViewModel : ObservableObject
 
         LoadMenuCommand = new AsyncRelayCommand(LoadMenuAsync, () => !IsBusy);
         AddItemCommand = new RelayCommand(AddItem, () => SelectedMenuItem is not null && QuantityToAdd > 0 && !IsBusy);
+        IncreaseQuantityToAddCommand = new RelayCommand(IncreaseQuantityToAdd, () => !IsBusy);
+        DecreaseQuantityToAddCommand = new RelayCommand(DecreaseQuantityToAdd, () => QuantityToAdd > 1 && !IsBusy);
+        IncreaseLineQuantityCommand = new RelayCommand<ManualOrderLineModel>(IncreaseLineQuantity, item => item is not null && !IsBusy);
+        DecreaseLineQuantityCommand = new RelayCommand<ManualOrderLineModel>(DecreaseLineQuantity, item => item is not null && item.Quantity > 1 && !IsBusy);
         RemoveItemCommand = new RelayCommand<ManualOrderLineModel>(RemoveItem, item => item is not null && !IsBusy);
         SubmitOrderCommand = new AsyncRelayCommand(SubmitOrderAsync, () => !IsBusy);
         NewOrderCommand = new RelayCommand(ClearOrder, () => !IsBusy);
@@ -86,6 +90,7 @@ public sealed class ManualOrderViewModel : ObservableObject
             if (SetProperty(ref _quantityToAdd, value))
             {
                 AddItemCommand.NotifyCanExecuteChanged();
+                DecreaseQuantityToAddCommand.NotifyCanExecuteChanged();
             }
         }
     }
@@ -116,6 +121,10 @@ public sealed class ManualOrderViewModel : ObservableObject
 
     public IAsyncRelayCommand LoadMenuCommand { get; }
     public IRelayCommand AddItemCommand { get; }
+    public IRelayCommand IncreaseQuantityToAddCommand { get; }
+    public IRelayCommand DecreaseQuantityToAddCommand { get; }
+    public IRelayCommand<ManualOrderLineModel> IncreaseLineQuantityCommand { get; }
+    public IRelayCommand<ManualOrderLineModel> DecreaseLineQuantityCommand { get; }
     public IRelayCommand<ManualOrderLineModel> RemoveItemCommand { get; }
     public IAsyncRelayCommand SubmitOrderCommand { get; }
     public IRelayCommand NewOrderCommand { get; }
@@ -145,7 +154,7 @@ public sealed class ManualOrderViewModel : ObservableObject
             SelectedMenuItem = MenuItems.FirstOrDefault();
             if (menu is null)
             {
-                ErrorMessage = "برای این تاریخ منویی ثبت نشده است.";
+                ErrorMessage = "برای امروز منویی ثبت نشده است.";
             }
         }
         catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException)
@@ -166,42 +175,94 @@ public sealed class ManualOrderViewModel : ObservableObject
         }
 
         var selectedItem = SelectedMenuItem.Value;
-        var requestedQuantity = Lines
-            .Where(line => line.DailyMenuItemId == selectedItem.Id)
-            .Sum(line => line.Quantity) + QuantityToAdd;
-
         if (selectedItem.RemainingPortions <= 0)
         {
             ErrorMessage = "این غذا ظرفیت باقی‌مانده ندارد.";
             return;
         }
 
-        if (requestedQuantity > selectedItem.RemainingPortions)
+        if (QuantityToAdd > selectedItem.RemainingPortions)
         {
             ErrorMessage = $"تعداد درخواستی از ظرفیت باقی‌مانده ({selectedItem.RemainingPortions:N0}) بیشتر است.";
             return;
         }
 
         var existing = Lines.SingleOrDefault(line => line.DailyMenuItemId == selectedItem.Id);
-        if (existing is null)
+        if (existing is not null)
         {
-            var line = new ManualOrderLineModel
-            {
-                DailyMenuItemId = selectedItem.Id,
-                FoodName = selectedItem.FoodName,
-                UnitPrice = selectedItem.Price,
-                Quantity = QuantityToAdd
-            };
-            line.PropertyChanged += (_, _) => OnPropertyChanged(nameof(TotalAmount));
-            Lines.Add(line);
+            ErrorMessage = "این غذا قبلاً به سفارش اضافه شده است. تعداد را با دکمه‌های + و − در جدول تغییر دهید.";
+            return;
         }
-        else
+
+        var line = new ManualOrderLineModel
         {
-            existing.Quantity += QuantityToAdd;
-        }
+            DailyMenuItemId = selectedItem.Id,
+            FoodName = selectedItem.FoodName,
+            UnitPrice = selectedItem.Price,
+            Quantity = QuantityToAdd
+        };
+        line.PropertyChanged += (_, _) => OnPropertyChanged(nameof(TotalAmount));
+        Lines.Add(line);
 
         OnPropertyChanged(nameof(TotalAmount));
         ErrorMessage = null;
+    }
+
+    private void IncreaseQuantityToAdd()
+    {
+        QuantityToAdd++;
+        DecreaseQuantityToAddCommand.NotifyCanExecuteChanged();
+    }
+
+    private void DecreaseQuantityToAdd()
+    {
+        if (QuantityToAdd <= 1)
+        {
+            return;
+        }
+
+        QuantityToAdd--;
+        DecreaseQuantityToAddCommand.NotifyCanExecuteChanged();
+    }
+
+    private void IncreaseLineQuantity(ManualOrderLineModel? item)
+    {
+        if (item is null)
+        {
+            return;
+        }
+
+        var menuItem = MenuItems.Select(option => option.Value)
+            .SingleOrDefault(menuItem => menuItem.Id == item.DailyMenuItemId);
+        if (menuItem is null)
+        {
+            ErrorMessage = "آیتم منو برای تغییر تعداد پیدا نشد.";
+            return;
+        }
+
+        if (item.Quantity + 1 > menuItem.RemainingPortions)
+        {
+            ErrorMessage = $"تعداد درخواستی از ظرفیت باقی‌مانده ({menuItem.RemainingPortions:N0}) بیشتر است.";
+            return;
+        }
+
+        item.Quantity++;
+        OnPropertyChanged(nameof(TotalAmount));
+        ErrorMessage = null;
+        DecreaseLineQuantityCommand.NotifyCanExecuteChanged();
+    }
+
+    private void DecreaseLineQuantity(ManualOrderLineModel? item)
+    {
+        if (item is null || item.Quantity <= 1)
+        {
+            return;
+        }
+
+        item.Quantity--;
+        OnPropertyChanged(nameof(TotalAmount));
+        ErrorMessage = null;
+        DecreaseLineQuantityCommand.NotifyCanExecuteChanged();
     }
 
     private void RemoveItem(ManualOrderLineModel? item)
@@ -314,6 +375,10 @@ public sealed class ManualOrderViewModel : ObservableObject
     {
         LoadMenuCommand.NotifyCanExecuteChanged();
         AddItemCommand.NotifyCanExecuteChanged();
+        IncreaseQuantityToAddCommand.NotifyCanExecuteChanged();
+        DecreaseQuantityToAddCommand.NotifyCanExecuteChanged();
+        IncreaseLineQuantityCommand.NotifyCanExecuteChanged();
+        DecreaseLineQuantityCommand.NotifyCanExecuteChanged();
         RemoveItemCommand.NotifyCanExecuteChanged();
         SubmitOrderCommand.NotifyCanExecuteChanged();
         NewOrderCommand.NotifyCanExecuteChanged();

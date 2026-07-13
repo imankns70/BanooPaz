@@ -1,3 +1,4 @@
+using System.Globalization;
 using Kafgir.Application.Interfaces;
 using Kafgir.Contracts.Orders;
 using Kafgir.Domain.Entities;
@@ -34,6 +35,7 @@ public sealed class OrderService(
     {
         ValidateCreateRequest(request);
         var now = DateTime.UtcNow;
+        var orderNumber = await GenerateOrderNumberAsync(now, cancellationToken);
         var fullName = request.FullName.Trim();
         var phoneNumber = NormalizePhoneNumber(request.PhoneNumber);
         var telegramIdentity = ResolveTelegramIdentity(request, allowMissingTelegramIdentity);
@@ -54,7 +56,7 @@ public sealed class OrderService(
 
         var order = new Order
         {
-            OrderNumber = GenerateOrderNumber(now),
+            OrderNumber = orderNumber,
             CustomerProfile = profile,
             CustomerProfileId = profile.Id,
             CustomerAddress = address,
@@ -310,6 +312,7 @@ public sealed class OrderService(
             (DomainOrderStatus.PendingConfirmation, DomainOrderStatus.Confirmed) => true,
             (DomainOrderStatus.PendingConfirmation, DomainOrderStatus.Cancelled) => true,
             (DomainOrderStatus.Confirmed, DomainOrderStatus.Preparing) => true,
+            (DomainOrderStatus.Confirmed, DomainOrderStatus.Delivered) => true,
             (DomainOrderStatus.Confirmed, DomainOrderStatus.Cancelled) => true,
             (DomainOrderStatus.Preparing, DomainOrderStatus.Ready) => true,
             (DomainOrderStatus.Preparing, DomainOrderStatus.Cancelled) => true,
@@ -349,8 +352,37 @@ public sealed class OrderService(
         }
     }
 
-    private static string GenerateOrderNumber(DateTime createdAt) =>
-        $"BP-{createdAt:yyyyMMdd-HHmmss}-{Guid.NewGuid():N}"[..31];
+    private async Task<string> GenerateOrderNumberAsync(
+        DateTime createdAtUtc,
+        CancellationToken cancellationToken)
+    {
+        var persianYear = GetPersianBusinessYear(createdAtUtc);
+        var prefix = persianYear.ToString(CultureInfo.InvariantCulture);
+        var nextCounter = await orderRepository.GetMaxOrderNumberCounterAsync(prefix, cancellationToken) + 1;
+        return $"{prefix}{nextCounter.ToString(CultureInfo.InvariantCulture)}";
+    }
+
+    private static int GetPersianBusinessYear(DateTime createdAtUtc)
+    {
+        var localCreatedAt = TimeZoneInfo.ConvertTimeFromUtc(createdAtUtc, BusinessTimeZone);
+        return PersianCalendar.GetYear(localCreatedAt);
+    }
+
+    private static readonly PersianCalendar PersianCalendar = new();
+
+    private static TimeZoneInfo BusinessTimeZone { get; } = ResolveBusinessTimeZone();
+
+    private static TimeZoneInfo ResolveBusinessTimeZone()
+    {
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("Iran Standard Time");
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("Asia/Tehran");
+        }
+    }
 
     private static string? NormalizeOptional(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();

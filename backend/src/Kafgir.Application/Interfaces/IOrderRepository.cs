@@ -11,5 +11,6 @@ public interface IOrderRepository
         DateOnly date,
         OrderStatus? status = null,
         CancellationToken cancellationToken = default);
+    Task<int> GetMaxOrderNumberCounterAsync(string persianYearPrefix, CancellationToken cancellationToken = default);
     Task AddAsync(Order order, CancellationToken cancellationToken = default);
 }
