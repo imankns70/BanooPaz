@@ -1,12 +1,36 @@
 :root {
-  font-family: Tahoma, Arial, sans-serif;
-  color: #342b28;
-  background: #fff8f1;
+  font-family: "Yekan", Tahoma, Arial, sans-serif;
+  color: #0f172a;
+  background: #f6f8fc;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; min-height: 100vh; }
-button, input, textarea, select { font: inherit; }
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+  background: #f6f8fc;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background: #f6f8fc;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
 button { cursor: pointer; }
+
+::selection {
+  color: #0f172a;
+  background: #bfdbfe;
+}

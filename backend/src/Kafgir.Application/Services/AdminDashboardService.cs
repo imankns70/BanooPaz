@@ -12,7 +12,7 @@ public sealed class AdminDashboardService(
     public async Task<AdminDashboardSummaryDto> GetTodayAsync(
         CancellationToken cancellationToken = default)
     {
-        var today = DateOnly.FromDateTime(DateTime.Today);
+        var today = GetBusinessDate(DateTime.UtcNow);
         var orders = await orderRepository.GetByDateAsync(today, null, cancellationToken);
         var menu = await dailyMenuRepository.GetByDateAsync(today, cancellationToken);
 
@@ -41,4 +41,24 @@ public sealed class AdminDashboardService(
         IReadOnlyList<Order> orders,
         OrderStatus status) =>
         orders.Count(order => order.Status == status);
+
+    private static DateOnly GetBusinessDate(DateTime utcNow)
+    {
+        var localNow = TimeZoneInfo.ConvertTimeFromUtc(utcNow, BusinessTimeZone);
+        return DateOnly.FromDateTime(localNow);
+    }
+
+    private static TimeZoneInfo BusinessTimeZone { get; } = ResolveBusinessTimeZone();
+
+    private static TimeZoneInfo ResolveBusinessTimeZone()
+    {
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("Iran Standard Time");
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("Asia/Tehran");
+        }
+    }
 }

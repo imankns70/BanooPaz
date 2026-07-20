@@ -107,15 +107,6 @@ public sealed class OrderService(
 
         order.SubtotalAmount = order.Items.Sum(item => item.TotalPrice);
         order.TotalAmount = order.SubtotalAmount + order.DeliveryFee;
-        order.StatusHistories.Add(new OrderStatusHistory
-        {
-            Order = order,
-            FromStatus = DomainOrderStatus.PendingConfirmation,
-            ToStatus = DomainOrderStatus.PendingConfirmation,
-            Note = "Order created",
-            ChangedAt = now
-        });
-
         await orderRepository.AddAsync(order, cancellationToken);
         await notificationQueue.EnqueueAdminOrderSubmittedAsync(order, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);

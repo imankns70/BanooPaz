@@ -10,9 +10,10 @@ public sealed class AdminDashboardServiceTests
     [Fact]
     public async Task GetToday_summarizes_orders_and_menu()
     {
+        var businessDate = GetBusinessDate();
         var menu = new DailyMenu
         {
-            MenuDate = DateOnly.FromDateTime(DateTime.Today),
+            MenuDate = businessDate,
             IsOpen = true,
             Items =
             {
@@ -20,20 +21,22 @@ public sealed class AdminDashboardServiceTests
                 new DailyMenuItem { Id = 2, FoodId = 2 }
             }
         };
-        var service = new AdminDashboardService(
-            new FakeOrderRepository([
+        var orderRepository = new FakeOrderRepository([
                 CreateOrder(OrderStatus.PendingConfirmation, 250_000, 2),
                 CreateOrder(OrderStatus.Confirmed, 300_000, 3),
                 CreateOrder(OrderStatus.Preparing, 180_000, 1),
                 CreateOrder(OrderStatus.Ready, 120_000, 1),
                 CreateOrder(OrderStatus.Delivered, 420_000, 4),
                 CreateOrder(OrderStatus.Cancelled, 999_000, 9)
-            ]),
-            new FakeDailyMenuRepository(menu));
+            ]);
+        var menuRepository = new FakeDailyMenuRepository(menu);
+        var service = new AdminDashboardService(orderRepository, menuRepository);
 
         var summary = await service.GetTodayAsync();
 
-        Assert.Equal(DateOnly.FromDateTime(DateTime.Today), summary.Date);
+        Assert.Equal(businessDate, summary.Date);
+        Assert.Equal(businessDate, orderRepository.RequestedDate);
+        Assert.Equal(businessDate, menuRepository.RequestedDate);
         Assert.Equal(6, summary.TotalOrders);
         Assert.Equal(1, summary.PendingOrders);
         Assert.Equal(1, summary.ConfirmedOrders);
@@ -64,8 +67,25 @@ public sealed class AdminDashboardServiceTests
         return order;
     }
 
+    private static DateOnly GetBusinessDate()
+    {
+        TimeZoneInfo timeZone;
+        try
+        {
+            timeZone = TimeZoneInfo.FindSystemTimeZoneById("Iran Standard Time");
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            timeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Tehran");
+        }
+
+        return DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZone));
+    }
+
     private sealed class FakeOrderRepository(IReadOnlyList<Order> orders) : IOrderRepository
     {
+        public DateOnly? RequestedDate { get; private set; }
+
         public Task<Order?> GetByIdAsync(int id, CancellationToken cancellationToken = default) =>
             Task.FromResult<Order?>(null);
 
@@ -75,10 +95,13 @@ public sealed class AdminDashboardServiceTests
         public Task<IReadOnlyList<Order>> GetByDateAsync(
             DateOnly date,
             OrderStatus? status = null,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult(status.HasValue
+            CancellationToken cancellationToken = default)
+        {
+            RequestedDate = date;
+            return Task.FromResult<IReadOnlyList<Order>>(status.HasValue
                 ? orders.Where(order => order.Status == status.Value).ToList()
                 : orders);
+        }
 
         public Task<int> GetMaxOrderNumberCounterAsync(string persianYearPrefix, CancellationToken cancellationToken = default) =>
             Task.FromResult(0);
@@ -89,10 +112,15 @@ public sealed class AdminDashboardServiceTests
 
     private sealed class FakeDailyMenuRepository(DailyMenu? menu) : IDailyMenuRepository
     {
+        public DateOnly? RequestedDate { get; private set; }
+
         public Task<DailyMenu?> GetByDateAsync(
             DateOnly date,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult(menu);
+            CancellationToken cancellationToken = default)
+        {
+            RequestedDate = date;
+            return Task.FromResult(menu);
+        }
 
         public Task<DailyMenu?> GetByIdAsync(int id, CancellationToken cancellationToken = default) =>
             Task.FromResult<DailyMenu?>(null);

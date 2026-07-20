@@ -1,16 +1,31 @@
 # Project state
 
 - Status: WPF admin dashboard, identity, customer profiles, and reusable addresses
+- Legacy markdown docs were moved from `docs/` into `.ai/docs/`.
 - Brand: Kafgir / کفگیر
 - City: Andimeshk / اندیمشک
 - Sales model: Per portion
 - Backend: ASP.NET Core Web API, SQL Server, EF Core, and .NET Worker Service
 - Development SQL can now be overridden per machine with ignored `appsettings.local.json` or `appsettings.Development.local.json` files in the API and Worker projects.
 - The shared Development config still defaults to Docker SQL Server on `localhost:1433` for `KafgirDb`.
+- This non-Docker development machine uses ignored API and Worker overrides for `(localdb)\\MSSQLLocalDB`; `KafgirDb` has all four current migrations applied.
 - Admin: WPF desktop application communicating only with the API
 - WPF project location: `backend/src/Kafgir.WPF`, beside the other source projects
 - WPF embeds and uses Vazir as the default UI font.
+- WPF uses a centralized modern light theme in `App.xaml`: `#F6F8FC` canvas, white surfaces, slate text, cobalt-blue primary actions, blue focus, and semantic green/amber/red states.
+- Shared WPF resources provide compact 38px controls, 6-10px radii, primary/secondary/ghost/danger buttons, rounded inputs, restrained borders/shadows, and neutral compact DataGrids.
+- The WPF admin shell uses a compact 232px medium-cobalt right sidebar with a white selected item and no gradients. It has no shared top panel; each page owns its heading and uses the full workspace height.
+- Sidebar navigation labels bind explicitly to each item foreground so global text styling cannot override their contextual contrast.
+- The global WPF `TextBlock` style controls typography only and does not force a foreground, allowing buttons, selected rows, badges, and semantic containers to provide readable contextual text colors.
+- Daily Menu grid body cells use larger typography for readability while headers and operation buttons retain compact sizing.
+- All WPF DataGrids use a shared client-side pager; main lists use larger page sizes and compact cart/detail grids use smaller page sizes without changing API contracts.
+- Orders searches the current date by status and order number without a date picker. Foods has a single name-search toolbar, and the Daily Menu grid no longer has a redundant title/guide strip.
+- Dashboard, Orders, Order Details, Manual Order, Foods, Daily Menu, inline forms, and Login share consistent title, section, card, toolbar, message, and action patterns.
+- The authenticated WPF page host applies one consistent top inset across Dashboard, Orders, Manual Order, Foods, and Daily Menu.
 - WPF login uses a food-themed background image stored in `backend/src/Kafgir.WPF/Assets/login-food-background.png`.
+- The WPF login background uses an explicit application pack URI so the embedded image resolves consistently at runtime.
+- WPF login submits with the Enter key from username and password inputs.
+- WPF provides a sidebar logout action that clears the in-memory JWT, stops order polling, resets order-entry state, and returns to login without restarting.
 - WPF checks API reachability through `/api/health` when the login screen opens and shows a retryable message if the server is unavailable.
 - WPF uses `fa-IR` with `PersianCalendar` for date/time display and a custom Persian date picker for admin date inputs.
 - WPF API clients serialize date route/query values with invariant Gregorian `yyyy-MM-dd` formatting so Persian UI culture does not leak into backend filters.
@@ -23,6 +38,7 @@
 - WPF manual ordering was reorganized into customer, menu item selection, order lines, and total cards with more visible operation buttons.
 - WPF manual ordering hides city input and sends the default city internally.
 - WPF manual ordering defaults to pickup so admin-created orders do not require an address unless delivery is selected.
+- WPF manual ordering still persists any typed address into the saved order snapshot, even when the admin leaves delivery method on pickup.
 - Admin/manual order phone numbers are normalized before customer/order storage.
 - WPF Foods manages dish identity only: name, description, image, and active status.
 - WPF Daily Menu owns daily selling price and portion capacity for each food.
@@ -30,11 +46,13 @@
 - WPF daily-menu price inputs support thousands separators.
 - WPF daily-menu price fields display comma separators such as `150,000` consistently.
 - WPF daily-menu settings save applies the stored menu returned by the API so the grid reflects persisted items and IDs.
-- WPF Daily Menu shows selected-date menu foods in a labeled `آیتم‌های منوی روزانه` grid below a compact date search bar.
-- WPF Daily Menu opens `افزودن` as a modal add-item form over the grid; it shows the selected Persian date and closes after successful add.
-- WPF Daily Menu add-item modal uses an aligned two-column form, and its `قیمت امروز` field applies thousands separators while typing.
-- WPF Daily Menu rows have `ویرایش`; edit mode reuses the modal, locks food selection, and updates daily price/capacity/active state through a single-item API.
-- WPF Daily Menu no longer has a row-level `تغییر وضعیت` button; active state is changed only through the edit modal's `فعال است؟` checkbox.
+- WPF Daily Menu is a current-day-only operations screen; its view model resolves today internally and does not expose a date picker or historical-menu search.
+- WPF Daily Menu no longer exposes menu-note editing. Existing note data is preserved when saving the current open/closed state.
+- WPF Daily Menu uses a focused today header, open-state control, add/save actions, capacity/sold/remaining summary cards, contextual messages, a clear empty state, and one framed vertically scrollable food grid.
+- WPF Daily Menu opens add and edit operations in a compact inline food form directly above the grid instead of a modal or separate page.
+- The inline daily-menu food form keeps the menu grid visible, formats `قیمت امروز` with thousands separators, and collapses after Save or Cancel.
+- WPF Daily Menu edit mode locks food selection and updates daily price, capacity, and active state through the single-item API.
+- WPF Daily Menu no longer has a row-level `تغییر وضعیت` button; active state is changed only through the inline edit form checkbox.
 - WPF Daily Menu grid shows a read-only `فعال` column for item active state.
 - Daily menu delete checks whether the daily item is referenced by any order item before removal, not only whether `SoldPortions` is greater than zero.
 - The WPF Daily Menu grid is read-only for price/capacity edits in the current flow; item changes happen through explicit add, status, and delete actions.
@@ -44,6 +62,8 @@
 - Backend exposes an explicit daily-menu item add route so WPF does not rely on local draft rows for adding foods.
 - Payment method is currently a contracts enum, not a database table; no payment gateway exists yet.
 - Customer: React + TypeScript + Vite Telegram Mini App
+- The Mini App shares the WPF slate/cobalt/neutral design system, adapted to touch with a compact sticky white header, simple blue brand mark, restrained menu introduction, availability badges, clean cards, and two-column checkout on wide screens.
+- Mini App motion uses 150-220ms transitions and restrained page/card entrance, with `prefers-reduced-motion` support.
 - Architecture: Pragmatic Clean Architecture with the API as the central integration point
 - API Swagger UI is the default Development landing page at the API root.
 - Current scope: Domain and persistence foundation plus Food, Daily Menu, and Order APIs
@@ -59,16 +79,25 @@
 - Admin order date filters use Iran business-day boundaries against UTC order timestamps.
 - WPF refreshes the Orders page whenever admins navigate back to it, so newly created manual orders are shown without waiting for stale navigation state.
 - WPF Orders has a `جستجو` button, order-number search input, switch-style auto-refresh toggle, and row-level actions for `تایید`, `تحویل`, and `لغو`; `تحویل` appears only after confirmation.
+- The current admin workflow intentionally skips `Preparing` and `Ready`; confirmed orders can move directly to delivered, while the shared enum values remain available for future expansion.
 - Daily menu capacity changes only when an order is confirmed or a confirmed order is cancelled.
 - The WPF admin now has a configured HTTP API client for order operations.
 - The WPF orders screen supports date/status filtering, automatic refresh, and order selection.
-- The WPF order details panel shows items and status history and provides status actions through the API.
+- The WPF orders page keeps a compact, vertically scrollable grid with a row-number column.
+- The WPF orders row-number column is one-based and displays `1, 2, 3, ...`.
+- The WPF order details panel shows items, status history, and same-size status action buttons through the API.
+- Orders auto-refresh preserves the selected row and reloads its details so status history and other detail fields do not remain stale.
+- New orders no longer add a synthetic "created" entry to status history; the grid shows only actual status changes.
 - Investigated and removed the optional ASP.NET Core OpenAPI dependency that introduced the `Microsoft.OpenApi` vulnerability warning.
 - WPF Foods management screen added.
 - WPF Daily Menu management screen added.
 - WPF navigation between Orders, Foods, and Daily Menu added.
 - Telegram Mini App MVP customer UI added.
 - Customer can view menu, manage cart, and submit order.
+- The Mini App loads Telegram's Web App SDK, calls `ready()` and `expand()`, and uses Telegram's native Back button for Cart and Success navigation.
+- The Mini App loads the Yekan Persian font from the online FontAPI/FontCDN stylesheet and falls back to Tahoma or Arial if unavailable.
+- The Mini App persists the cart locally and reconciles restored items, prices, and quantities against the latest open daily menu before checkout.
+- API CORS origins are configuration-driven; Development allows the Vite origin `http://localhost:5173`.
 - ASP.NET Core Identity with integer keys manages users and roles.
 - `ApplicationUser` and roles `Customer`, `Owner`, `KitchenAdmin`, and `OrderManager` were added.
 - `CustomerProfile` and reusable `CustomerAddress` business entities were added.
@@ -78,6 +107,7 @@
 - WPF stores the admin JWT in memory after login and attaches it to admin API requests as a bearer token.
 - Admin food, daily-menu, and order routes require an authenticated admin role (`Owner`, `KitchenAdmin`, or `OrderManager`).
 - The WPF admin dashboard loads after login and shows today's order counts, active orders, portions, gross non-cancelled sales, and menu state through `/api/admin/dashboard/today`.
+- The dashboard refreshes whenever admins navigate to it, and its backend determines today using Iran business time before querying orders and the daily menu.
 - The Mini App reads today's menu from the public `/api/menus/today` endpoint.
 - Telegram Mini App order submissions send raw `Telegram.WebApp.initData`; the backend validates the HMAC signature and freshness before trusting Telegram user identity. Missing `initData` is allowed only for development fallback when validation is not required.
 - Telegram identity and chat metadata are stored in the dedicated `TelegramAccounts` table linked one-to-one to Identity users.

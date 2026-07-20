@@ -15,14 +15,30 @@
 - [x] Implement Order API endpoints
 - [x] Implement WPF API client
 - [x] Implement WPF dashboard screen
+- [x] Fix dashboard order statistics refresh and Iran business-date calculation
 - [x] Implement WPF order list screen
 - [x] Implement WPF order detail/status screen
+- [x] Move WPF order-list action buttons out of the grid into the order details panel
+- [x] Add WPF order-grid row numbers and explicit vertical scrolling
+- [x] Refresh selected order details during WPF order auto-refresh
+- [x] Make WPF order-grid row numbers one-based
+- [x] Remove synthetic order-created history entries and polish order-page spacing/history width
+- [x] Preserve entered manual-order address text in the saved order snapshot
 - [x] Remove Microsoft.OpenApi dependency/warning
 - [x] Implement WPF Foods screen
 - [x] Implement WPF Daily Menu screen
+- [x] Expose WPF Daily Menu open state, note, and settings save controls
+- [x] Move WPF Daily Menu open-state and save controls into the top action bar
+- [x] Replace the WPF Daily Menu add/edit modal with an inline form above the grid
+- [x] Simplify WPF Daily Menu to a current-day-only screen and redesign its operational UI
 - [x] Implement Mini App daily menu page
 - [x] Implement Mini App cart
 - [x] Implement Mini App order submission
+- [x] Initialize the Telegram Web App SDK and native Back button navigation
+- [x] Apply the online Yekan CDN font to the React Mini App
+- [x] Persist and reconcile the Mini App cart against the latest daily menu
+- [x] Configure local Mini App API URL and API CORS allowlist
+- [x] Repair the Mini App npm lockfile for reproducible installs
 - [x] Refactor identity model to ASP.NET Core Identity
 - [x] Add CustomerProfile and reusable CustomerAddress
 - [x] Add default WPF admin seed
@@ -30,6 +46,8 @@
 - [x] Add public customer menu endpoint `/api/menus/today`
 - [x] Protect WPF admin API routes with JWT authorization
 - [x] Add WPF login screen with password hide/show toggle
+- [x] Enable Enter-key submit on the WPF login form
+- [x] Add WPF sidebar logout with session and screen-state cleanup
 - [x] Add Telegram initData validation
 - [x] Add returning customer profile preload endpoint
 - [x] Add Mini App saved-address selection UI
@@ -41,10 +59,22 @@
 - [x] Configure WPF Persian calendar display
 - [x] Change WPF admin layout to right sidebar navigation
 - [x] Apply Vazir font to WPF admin
+- [x] Apply a shared polished Kafgir theme to WPF and the responsive Mini App
+- [x] Remove the shared WPF top panel and give pages the full content workspace
+- [x] Apply consistent top spacing across all authenticated WPF pages
+- [x] Replace the earthy theme with a modern crisp-blue WPF and Mini App design system
+- [x] Normalize WPF page headers, cards, toolbars, forms, grids, and semantic actions
+- [x] Fix WPF sidebar navigation contrast under global TextBlock styling
+- [x] Restore contextual foreground inheritance across all WPF text
+- [x] Increase Daily Menu grid body typography without resizing headers or operation buttons
+- [x] Lighten the WPF sidebar and simplify Orders, Foods, and Daily Menu grid toolbars
+- [x] Add reusable client-side pagination to every WPF DataGrid
+- [x] Simplify Mini App header, menu cards, cart, checkout, and responsive styling
 - [x] Fix daily menu save/delete behavior for unsold items
 - [x] Add WPF manual order page
 - [x] Fix WPF manual order food selection and city/price input polish
 - [x] Add WPF login food background
+- [x] Fix runtime resolution of the embedded WPF login background
 - [x] Fix WPF daily-menu grid refresh after save
 - [x] Harden manual order storage defaults and phone normalization
 - [x] Move WPF price entry from Foods to Daily Menu add flow
@@ -56,4 +86,6 @@
 - [x] Rename brand to Kafgir
 - [x] Configure development connection strings for Docker SQL Server
 - [x] Add per-machine local connection string override support for API and Worker
+- [x] Configure this non-Docker machine for LocalDB and apply all current migrations
+- [x] Move legacy markdown docs into `.ai/docs`
 - [ ] Add AI food image generation workflow

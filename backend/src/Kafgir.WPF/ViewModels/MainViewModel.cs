@@ -1,4 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Kafgir.WPF.Services.Api;
 
 namespace Kafgir.WPF.ViewModels;
 
@@ -8,12 +10,13 @@ public sealed class MainViewModel(
     OrdersViewModel orders,
     ManualOrderViewModel manualOrder,
     FoodsViewModel foods,
-    DailyMenuViewModel dailyMenu) : ObservableObject
+    DailyMenuViewModel dailyMenu,
+    IAdminSession adminSession) : ObservableObject
 {
     private bool _isAuthenticated;
     private int _selectedNavigationIndex;
-    private bool _dashboardLoaded;
     private bool _foodsLoaded;
+    private IRelayCommand? _logoutCommand;
 
     public LoginViewModel Login { get; } = login;
     public DashboardViewModel Dashboard { get; } = dashboard;
@@ -21,6 +24,7 @@ public sealed class MainViewModel(
     public ManualOrderViewModel ManualOrder { get; } = manualOrder;
     public FoodsViewModel Foods { get; } = foods;
     public DailyMenuViewModel DailyMenu { get; } = dailyMenu;
+    public IRelayCommand LogoutCommand => _logoutCommand ??= new RelayCommand(Logout);
 
     public bool IsAuthenticated
     {
@@ -47,6 +51,16 @@ public sealed class MainViewModel(
         LoadSelectedPageIfAuthenticated();
     }
 
+    private void Logout()
+    {
+        adminSession.Clear();
+        Orders.ResetForLogout();
+        ManualOrder.ResetForLogout();
+        _foodsLoaded = false;
+        IsAuthenticated = false;
+        SelectedNavigationIndex = 0;
+    }
+
     private void LoadSelectedPageIfAuthenticated()
     {
         if (!IsAuthenticated)
@@ -56,9 +70,8 @@ public sealed class MainViewModel(
 
         switch (SelectedNavigationIndex)
         {
-            case 0 when !_dashboardLoaded:
-                _dashboardLoaded = true;
-                Dashboard.LoadCommand.Execute(null);
+            case 0:
+                Dashboard.RefreshCommand.Execute(null);
                 break;
             case 1:
                 Orders.RefreshCommand.Execute(null);

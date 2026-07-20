@@ -1,32 +1,35 @@
-# React + TypeScript + Vite
+# Kafgir Telegram Mini App
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Customer-facing React, TypeScript, and Vite application for viewing today's menu, managing a cart, loading saved customer details, and submitting orders.
 
-Currently, two official plugins are available:
+The UI loads the Yekan Persian webfont from `https://v1.fontapi.ir/css/Yekan`, with Tahoma and Arial as offline fallbacks.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Local development
 
-## React Compiler
+1. Start `Kafgir.Api` with its HTTPS profile at `https://localhost:7279`.
+2. Trust the local ASP.NET Core HTTPS certificate if the browser has not accepted it yet.
+3. Install and run the Mini App:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```powershell
+npm ci
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+The Development API configuration allows `http://localhost:5173`. Override the API address by creating an ignored `.env.local` file:
+
+```text
+VITE_API_BASE_URL=https://localhost:7279
+```
+
+## Verification
+
+```powershell
+npm run lint
+npm run build
+```
+
+## Telegram and production
+
+The page loads Telegram's Web App SDK from `telegram.org`, calls `ready()` and `expand()`, and uses the native Back button. Local browser development works without Telegram and uses the backend's Development identity fallback.
+
+Production requires an HTTPS deployment URL registered with the Telegram bot, `VITE_API_BASE_URL` pointing to the deployed API, and that exact frontend origin in the API `Cors:AllowedOrigins` configuration. Telegram `initData` must remain required outside Development.

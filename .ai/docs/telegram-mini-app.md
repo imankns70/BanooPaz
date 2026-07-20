@@ -2,6 +2,14 @@
 
 The Mini App is the customer-facing ordering experience.
 
+The page loads Telegram's Web App SDK, signals `ready()`, expands to the available viewport, and uses Telegram's native Back button when the customer is viewing the cart or order-success page. Outside Telegram, these integrations safely become no-ops so local browser development still works.
+
+Persian UI typography uses the online Yekan stylesheet from FontAPI/FontCDN, with Tahoma and Arial as fallbacks when the font CDN is unavailable.
+
+The customer theme reuses the WPF crisp-blue design language while remaining mobile-first: cool neutral canvas, white surfaces, slate typography, cobalt actions and focus, and semantic status colors. The UI uses a compact sticky white header, square blue brand mark, restrained light-blue menu introduction, simple food cards with remaining-portion badges, clear cart quantity controls, responsive checkout panels, and visible focus states. Decorative gradients, oversized seals, asymmetric shapes, and heavy shadows are not part of the active theme.
+
+Entrance motion is intentionally restrained to 150-220ms and disabled through `prefers-reduced-motion` when requested by the device. Shared colors, spacing, shadows, and responsive rules live in `src/App.css` and `src/index.css`; components should reuse those tokens rather than defining isolated visual systems.
+
 ## Customer flow
 
 1. Open the Mini App.
@@ -17,6 +25,7 @@ The first MVP customer UI is implemented:
 
 - Customer can view today's menu.
 - Customer can add food to cart and update quantities.
+- Cart contents survive page refreshes in browser storage and are reconciled against the latest menu so removed, unavailable, sold-out, or repriced items cannot remain stale.
 - Customer can enter delivery details and submit an order.
 - The Mini App sends raw `Telegram.WebApp.initData` during checkout and profile preload. The backend validates its HMAC hash and freshness before trusting Telegram user identity.
 - Returning customers receive their saved profile and active address data through `POST /api/customers/me`.
@@ -31,6 +40,8 @@ Validated Telegram user and chat metadata is stored in the `TelegramAccounts` ta
 ## Backend configuration
 
 Set `Telegram:BotToken` from BotFather in a secure configuration source. `Telegram:InitDataMaxAgeMinutes` controls freshness; the default is 1440 minutes. Missing `initData` is rejected outside the Development environment. In Development, missing `initData` can fall back to raw Mini App user fields only when `Telegram:RequireInitData` is `false`.
+
+The frontend API URL comes from `VITE_API_BASE_URL`; local Development defaults to `https://localhost:7279`. Browser origins are allowed through the API's `Cors:AllowedOrigins` configuration. Production must add only the deployed HTTPS Mini App origin.
 
 For notifications, the same bot token is used by `Kafgir.Worker` to call Telegram Bot API `sendMessage`. Customers must have opened or interacted with the bot before Telegram allows the bot to send them direct messages.
 

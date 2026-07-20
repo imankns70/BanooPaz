@@ -61,6 +61,7 @@ public sealed class ManualOrderViewModel : ObservableObject
 
     public ObservableCollection<SelectOption<DailyMenuItemDto>> MenuItems { get; } = [];
     public ObservableCollection<ManualOrderLineModel> Lines { get; } = [];
+    public PaginationViewModel<ManualOrderLineModel> LinesPagination { get; } = new(6);
     public IReadOnlyList<SelectOption<PaymentMethod>> PaymentMethods { get; }
     public IReadOnlyList<SelectOption<DeliveryMethod>> DeliveryMethods { get; }
 
@@ -203,6 +204,8 @@ public sealed class ManualOrderViewModel : ObservableObject
         };
         line.PropertyChanged += (_, _) => OnPropertyChanged(nameof(TotalAmount));
         Lines.Add(line);
+        LinesPagination.SetItems(Lines, resetPage: false);
+        LinesPagination.MoveToLastPage();
 
         OnPropertyChanged(nameof(TotalAmount));
         ErrorMessage = null;
@@ -273,6 +276,7 @@ public sealed class ManualOrderViewModel : ObservableObject
         }
 
         Lines.Remove(item);
+        LinesPagination.SetItems(Lines, resetPage: false);
         OnPropertyChanged(nameof(TotalAmount));
     }
 
@@ -294,7 +298,7 @@ public sealed class ManualOrderViewModel : ObservableObject
                 FullName = FullName.Trim(),
                 PhoneNumber = PhoneNumber.Trim(),
                 City = DefaultCity,
-                AddressLine = SelectedDeliveryMethod.Value == DeliveryMethod.Delivery ? AddressLine?.Trim() : null,
+                AddressLine = string.IsNullOrWhiteSpace(AddressLine) ? null : AddressLine.Trim(),
                 PaymentMethod = SelectedPaymentMethod.Value,
                 DeliveryMethod = SelectedDeliveryMethod.Value,
                 CustomerNote = CustomerNote,
@@ -356,6 +360,13 @@ public sealed class ManualOrderViewModel : ObservableObject
 
     private void ClearOrder() => ClearOrder(keepSuccessMessage: false);
 
+    public void ResetForLogout()
+    {
+        ClearOrder(keepSuccessMessage: false);
+        MenuItems.Clear();
+        SelectedMenuItem = null;
+    }
+
     private void ClearOrder(bool keepSuccessMessage)
     {
         FullName = string.Empty;
@@ -363,6 +374,7 @@ public sealed class ManualOrderViewModel : ObservableObject
         AddressLine = null;
         CustomerNote = null;
         Lines.Clear();
+        LinesPagination.SetItems([]);
         OnPropertyChanged(nameof(TotalAmount));
         ErrorMessage = null;
         if (!keepSuccessMessage)

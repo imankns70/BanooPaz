@@ -49,6 +49,7 @@ public sealed class OrdersViewModel : ObservableObject, IDisposable
     }
 
     public ObservableCollection<OrderSummaryDto> Orders { get; } = [];
+    public PaginationViewModel<OrderSummaryDto> OrdersPagination { get; } = new(12);
     public IReadOnlyList<OrderStatusFilterOption> StatusFilters { get; }
     public OrderDetailsViewModel Details { get; } = new();
 
@@ -160,6 +161,17 @@ public sealed class OrdersViewModel : ObservableObject, IDisposable
         }
     }
 
+    public void ResetForLogout()
+    {
+        _pollTimer.Stop();
+        Orders.Clear();
+        OrdersPagination.SetItems([]);
+        SelectedOrder = null;
+        OrderNumberSearch = null;
+        ErrorMessage = null;
+        SuccessMessage = null;
+    }
+
     private IAsyncRelayCommand<OrderSummaryDto?> CreateStatusCommand(OrderStatus status) =>
         new AsyncRelayCommand<OrderSummaryDto?>(
             order => UpdateStatusAsync(status, order),
@@ -172,7 +184,9 @@ public sealed class OrdersViewModel : ObservableObject, IDisposable
             return;
         }
 
+        SelectedDate = DateTime.Today;
         var selectedId = SelectedOrder?.Id;
+        var shouldRefreshSelectedDetails = false;
         IsBusy = true;
         ErrorMessage = null;
 
@@ -196,6 +210,7 @@ public sealed class OrdersViewModel : ObservableObject, IDisposable
             {
                 Orders.Add(order);
             }
+            OrdersPagination.SetItems(Orders, resetPage: false);
 
             var refreshedSelection = selectedId.HasValue
                 ? Orders.FirstOrDefault(order => order.Id == selectedId.Value)
@@ -212,6 +227,10 @@ public sealed class OrdersViewModel : ObservableObject, IDisposable
             {
                 Details.Order = null;
             }
+            else if (refreshedSelection is not null && Details.Order?.Id == refreshedSelection.Id)
+            {
+                shouldRefreshSelectedDetails = true;
+            }
         }
         catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException)
         {
@@ -220,6 +239,11 @@ public sealed class OrdersViewModel : ObservableObject, IDisposable
         finally
         {
             IsBusy = false;
+        }
+
+        if (shouldRefreshSelectedDetails)
+        {
+            await LoadOrderDetailsAsync();
         }
     }
 
@@ -283,10 +307,6 @@ public sealed class OrdersViewModel : ObservableObject, IDisposable
         }
 
         await LoadOrdersAsync();
-        if (SelectedOrder?.Id == orderId)
-        {
-            await LoadOrderDetailsAsync();
-        }
     }
 
     private bool CanUseSelectedOrder() => SelectedOrder is not null && !IsBusy;

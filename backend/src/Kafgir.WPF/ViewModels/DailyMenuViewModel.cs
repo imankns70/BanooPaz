@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.Net.Http;
 using Kafgir.WPF.Models;
 using Kafgir.WPF.Services.Api;
@@ -14,7 +15,7 @@ public sealed class DailyMenuViewModel : ObservableObject
 {
     private readonly IDailyMenusApiClient _menusApiClient;
     private readonly IFoodsApiClient _foodsApiClient;
-    private DateTime _selectedDate = DateTime.Today;
+    private DateTime _currentDate = DateTime.Today;
     private bool _isOpen = true;
     private string? _note;
     private FoodDto? _selectedFoodToAdd;
@@ -23,7 +24,7 @@ public sealed class DailyMenuViewModel : ObservableObject
     private bool _itemIsAvailableForEdit = true;
     private bool _hasUnsavedChanges;
     private int _isSaving;
-    private bool _isAddItemPopupVisible;
+    private bool _isItemFormVisible;
     private DailyMenuItemEditModel? _editingItem;
     private bool _isBusy;
     private string? _errorMessage;
@@ -34,35 +35,27 @@ public sealed class DailyMenuViewModel : ObservableObject
         _menusApiClient = menusApiClient;
         _foodsApiClient = foodsApiClient;
         LoadMenuCommand = new AsyncRelayCommand(LoadMenuAsync, () => !IsBusy);
-        RefreshCommand = new AsyncRelayCommand(LoadMenuAsync, () => !IsBusy);
-        OpenAddItemPopupCommand = new AsyncRelayCommand(OpenAddItemPopupAsync, () => !IsBusy);
-        CloseAddItemPopupCommand = new RelayCommand(CloseAddItemPopup, () => !IsBusy);
-        SavePopupItemCommand = new AsyncRelayCommand(SavePopupItemAsync, () => SelectedFoodToAdd is not null && !IsBusy);
-        EditItemCommand = new RelayCommand<DailyMenuItemEditModel>(OpenEditItemPopup, item => item is not null && !IsBusy);
+        OpenItemFormCommand = new AsyncRelayCommand(OpenAddItemFormAsync, () => !IsBusy);
+        CloseItemFormCommand = new RelayCommand(CloseItemForm, () => !IsBusy);
+        SaveItemFormCommand = new AsyncRelayCommand(SaveItemFormAsync, () => SelectedFoodToAdd is not null && !IsBusy);
+        EditItemCommand = new RelayCommand<DailyMenuItemEditModel>(OpenEditItemForm, item => item is not null && !IsBusy);
         SaveMenuCommand = new AsyncRelayCommand(SaveMenuAsync, () => !IsBusy);
         RemoveItemCommand = new AsyncRelayCommand<DailyMenuItemEditModel>(RemoveItemAsync, item => item is not null && !IsBusy);
     }
 
     public ObservableCollection<FoodDto> AvailableFoods { get; } = [];
     public ObservableCollection<DailyMenuItemEditModel> Items { get; } = [];
-    public DateTime SelectedDate { get => _selectedDate; set => SetProperty(ref _selectedDate, value); }
+    public PaginationViewModel<DailyMenuItemEditModel> ItemsPagination { get; } = new(10);
+    public string CurrentDateText => _currentDate.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fa-IR"));
+    public int TotalCapacity => Items.Sum(item => item.CapacityPortions);
+    public int TotalSold => Items.Sum(item => item.SoldPortions);
+    public int TotalRemaining => Items.Sum(item => item.RemainingPortions);
     public bool IsOpen
     {
         get => _isOpen;
         set
         {
             if (SetProperty(ref _isOpen, value))
-            {
-                MarkUnsaved();
-            }
-        }
-    }
-    public string? Note
-    {
-        get => _note;
-        set
-        {
-            if (SetProperty(ref _note, value))
             {
                 MarkUnsaved();
             }
@@ -86,22 +79,21 @@ public sealed class DailyMenuViewModel : ObservableObject
     public bool HasUnsavedChanges { get => _hasUnsavedChanges; private set => SetProperty(ref _hasUnsavedChanges, value); }
     public bool IsEditingItem => _editingItem is not null;
     public bool IsFoodSelectionEnabled => !IsEditingItem;
-    public string PopupTitle => IsEditingItem ? "ویرایش آیتم منوی روزانه" : "افزودن غذا به منوی روزانه";
-    public string PopupSubmitText => IsEditingItem ? "ذخیره" : "ثبت";
-    public bool IsAddItemPopupVisible
+    public string ItemFormTitle => IsEditingItem ? "ویرایش غذای منوی روزانه" : "افزودن غذا به منوی روزانه";
+    public string ItemFormSubmitText => IsEditingItem ? "ذخیره تغییرات" : "افزودن غذا";
+    public bool IsItemFormVisible
     {
-        get => _isAddItemPopupVisible;
+        get => _isItemFormVisible;
         private set
         {
-            SetProperty(ref _isAddItemPopupVisible, value);
+            SetProperty(ref _isItemFormVisible, value);
         }
     }
 
     public IAsyncRelayCommand LoadMenuCommand { get; }
-    public IAsyncRelayCommand RefreshCommand { get; }
-    public IAsyncRelayCommand OpenAddItemPopupCommand { get; }
-    public IRelayCommand CloseAddItemPopupCommand { get; }
-    public IAsyncRelayCommand SavePopupItemCommand { get; }
+    public IAsyncRelayCommand OpenItemFormCommand { get; }
+    public IRelayCommand CloseItemFormCommand { get; }
+    public IAsyncRelayCommand SaveItemFormCommand { get; }
     public IRelayCommand<DailyMenuItemEditModel> EditItemCommand { get; }
     public IAsyncRelayCommand<DailyMenuItemEditModel> RemoveItemCommand { get; }
     public IAsyncRelayCommand SaveMenuCommand { get; }
@@ -109,6 +101,7 @@ public sealed class DailyMenuViewModel : ObservableObject
     private async Task LoadMenuAsync()
     {
         if (IsBusy) return;
+        SetCurrentDateToToday();
         if (HasUnsavedChanges)
         {
             ErrorMessage = "تغییرات ذخیره‌نشده دارید. ابتدا منو را ذخیره کنید؛ سپس دوباره بارگذاری کنید.";
@@ -121,7 +114,7 @@ public sealed class DailyMenuViewModel : ObservableObject
         try
         {
             var foodsTask = _foodsApiClient.GetFoodsAsync();
-            var menuTask = _menusApiClient.GetMenuByDateAsync(DateOnly.FromDateTime(SelectedDate));
+            var menuTask = _menusApiClient.GetMenuByDateAsync(DateOnly.FromDateTime(_currentDate));
             await Task.WhenAll(foodsTask, menuTask);
 
             AvailableFoods.Clear();
@@ -141,7 +134,7 @@ public sealed class DailyMenuViewModel : ObservableObject
         finally { IsBusy = false; }
     }
 
-    private async Task OpenAddItemPopupAsync()
+    private async Task OpenAddItemFormAsync()
     {
         if (IsBusy)
         {
@@ -157,24 +150,24 @@ public sealed class DailyMenuViewModel : ObservableObject
         }
 
         _editingItem = null;
-        OnPopupModeChanged();
+        OnFormModeChanged();
         PriceToAdd = 0;
         CapacityToAdd = 0;
         ItemIsAvailableForEdit = true;
         SelectedFoodToAdd ??= AvailableFoods.FirstOrDefault();
-        IsAddItemPopupVisible = true;
+        IsItemFormVisible = true;
     }
 
-    private void CloseAddItemPopup()
+    private void CloseItemForm()
     {
         ErrorMessage = null;
         SuccessMessage = null;
         _editingItem = null;
-        OnPopupModeChanged();
-        IsAddItemPopupVisible = false;
+        OnFormModeChanged();
+        IsItemFormVisible = false;
     }
 
-    private void OpenEditItemPopup(DailyMenuItemEditModel? item)
+    private void OpenEditItemForm(DailyMenuItemEditModel? item)
     {
         if (item is null || IsBusy)
         {
@@ -182,7 +175,7 @@ public sealed class DailyMenuViewModel : ObservableObject
         }
 
         _editingItem = item;
-        OnPopupModeChanged();
+        OnFormModeChanged();
         SelectedFoodToAdd = AvailableFoods.FirstOrDefault(food => food.Id == item.FoodId);
         if (SelectedFoodToAdd is null)
         {
@@ -194,16 +187,17 @@ public sealed class DailyMenuViewModel : ObservableObject
         ItemIsAvailableForEdit = item.IsAvailable;
         ErrorMessage = null;
         SuccessMessage = null;
-        IsAddItemPopupVisible = true;
+        IsItemFormVisible = true;
     }
 
     private void ApplyMenu(DailyMenuDto? menu)
     {
         ClearMenuItems();
         SetProperty(ref _isOpen, menu?.IsOpen ?? true, nameof(IsOpen));
-        SetProperty(ref _note, menu?.Note, nameof(Note));
+        _note = menu?.Note;
         if (menu is null)
         {
+            ItemsPagination.SetItems([]);
             HasUnsavedChanges = false;
             return;
         }
@@ -217,10 +211,12 @@ public sealed class DailyMenuViewModel : ObservableObject
             }, markUnsaved: false);
         }
 
+        ItemsPagination.SetItems(Items, resetPage: false);
+        NotifySummaryChanged();
         HasUnsavedChanges = false;
     }
 
-    private async Task SavePopupItemAsync()
+    private async Task SaveItemFormAsync()
     {
         if (_editingItem is not null)
         {
@@ -263,7 +259,7 @@ public sealed class DailyMenuViewModel : ObservableObject
         try
         {
             var saved = await _menusApiClient.AddMenuItemAsync(
-                DateOnly.FromDateTime(SelectedDate),
+                DateOnly.FromDateTime(_currentDate),
                 new UpsertDailyMenuItemRequest
                 {
                     FoodId = SelectedFoodToAdd.Id,
@@ -274,7 +270,7 @@ public sealed class DailyMenuViewModel : ObservableObject
             ApplyMenu(saved);
             PriceToAdd = 0;
             CapacityToAdd = 0;
-            IsAddItemPopupVisible = false;
+            IsItemFormVisible = false;
             SuccessMessage = "غذا به منوی روزانه اضافه و ذخیره شد.";
         }
         catch (Exception exception)
@@ -327,8 +323,8 @@ public sealed class DailyMenuViewModel : ObservableObject
                 });
             ApplyMenu(saved);
             _editingItem = null;
-            OnPopupModeChanged();
-            IsAddItemPopupVisible = false;
+            OnFormModeChanged();
+            IsItemFormVisible = false;
             SuccessMessage = "آیتم منوی روزانه ویرایش شد.";
         }
         catch (Exception exception)
@@ -358,6 +354,8 @@ public sealed class DailyMenuViewModel : ObservableObject
         {
             item.PropertyChanged -= MenuItemOnPropertyChanged;
             Items.Remove(item);
+            ItemsPagination.SetItems(Items, resetPage: false);
+            NotifySummaryChanged();
             HasUnsavedChanges = false;
             ErrorMessage = null;
             SuccessMessage = "آیتم حذف شد.";
@@ -397,11 +395,11 @@ public sealed class DailyMenuViewModel : ObservableObject
             SuccessMessage = null;
 
             var saved = await _menusApiClient.UpdateMenuSettingsAsync(
-                DateOnly.FromDateTime(SelectedDate),
+                DateOnly.FromDateTime(_currentDate),
                 new UpdateDailyMenuSettingsRequest
             {
                 IsOpen = IsOpen,
-                Note = Note
+                Note = _note
             });
             ApplyMenu(saved);
             HasUnsavedChanges = false;
@@ -420,18 +418,18 @@ public sealed class DailyMenuViewModel : ObservableObject
 
     private void NotifyCommands()
     {
-        LoadMenuCommand?.NotifyCanExecuteChanged(); RefreshCommand?.NotifyCanExecuteChanged();
-        OpenAddItemPopupCommand?.NotifyCanExecuteChanged(); CloseAddItemPopupCommand?.NotifyCanExecuteChanged();
-        SavePopupItemCommand?.NotifyCanExecuteChanged(); EditItemCommand?.NotifyCanExecuteChanged();
+        LoadMenuCommand?.NotifyCanExecuteChanged();
+        OpenItemFormCommand?.NotifyCanExecuteChanged(); CloseItemFormCommand?.NotifyCanExecuteChanged();
+        SaveItemFormCommand?.NotifyCanExecuteChanged(); EditItemCommand?.NotifyCanExecuteChanged();
         RemoveItemCommand?.NotifyCanExecuteChanged(); SaveMenuCommand?.NotifyCanExecuteChanged();
     }
 
-    private void OnPopupModeChanged()
+    private void OnFormModeChanged()
     {
         OnPropertyChanged(nameof(IsEditingItem));
         OnPropertyChanged(nameof(IsFoodSelectionEnabled));
-        OnPropertyChanged(nameof(PopupTitle));
-        OnPropertyChanged(nameof(PopupSubmitText));
+        OnPropertyChanged(nameof(ItemFormTitle));
+        OnPropertyChanged(nameof(ItemFormSubmitText));
         NotifyCommands();
     }
 
@@ -460,6 +458,8 @@ public sealed class DailyMenuViewModel : ObservableObject
     {
         item.PropertyChanged += MenuItemOnPropertyChanged;
         Items.Add(item);
+        ItemsPagination.SetItems(Items, resetPage: false);
+        NotifySummaryChanged();
         if (markUnsaved)
         {
             MarkUnsaved();
@@ -474,10 +474,12 @@ public sealed class DailyMenuViewModel : ObservableObject
         }
 
         Items.Clear();
+        NotifySummaryChanged();
     }
 
     private void MenuItemOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        NotifySummaryChanged();
         if (e.PropertyName is nameof(DailyMenuItemEditModel.RemainingPortions))
         {
             return;
@@ -490,5 +492,25 @@ public sealed class DailyMenuViewModel : ObservableObject
     {
         HasUnsavedChanges = true;
         SuccessMessage = null;
+    }
+
+    private void SetCurrentDateToToday()
+    {
+        var today = DateTime.Today;
+        if (_currentDate.Date == today)
+        {
+            return;
+        }
+
+        _currentDate = today;
+        OnPropertyChanged(nameof(CurrentDateText));
+        HasUnsavedChanges = false;
+    }
+
+    private void NotifySummaryChanged()
+    {
+        OnPropertyChanged(nameof(TotalCapacity));
+        OnPropertyChanged(nameof(TotalSold));
+        OnPropertyChanged(nameof(TotalRemaining));
     }
 }

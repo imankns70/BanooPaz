@@ -11,8 +11,13 @@ export function MenuPage({ menu, isLoading, error, onRetry, onAdd }: Props) {
 
   const availableItems = menu.items.filter((item) => item.isAvailable && item.remainingPortions > 0)
   return <main>
-    <h1 className="section-title">منوی امروز</h1>
-    <p className="section-subtitle">{menu.note || 'غذای تازه و خانگی در اندیمشک'}</p>
+    <section className="menu-intro">
+      <div>
+        <span className="eyebrow">پخت تازه امروز</span>
+        <h1 className="section-title">منوی امروز</h1>
+        <p className="section-subtitle">{menu.note || 'غذای تازه و خانگی در اندیمشک'}</p>
+      </div>
+    </section>
     {availableItems.length === 0
       ? <div className="status-card">غذای قابل سفارشی برای امروز باقی نمانده است.</div>
       : <div className="menu-grid">{availableItems.map((item) => <MenuItemCard key={item.id} item={item} onAdd={onAdd} />)}</div>}

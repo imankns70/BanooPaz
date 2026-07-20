@@ -69,7 +69,8 @@ public partial class App : Application
                         provider.GetRequiredService<OrdersViewModel>(),
                         provider.GetRequiredService<ManualOrderViewModel>(),
                         provider.GetRequiredService<FoodsViewModel>(),
-                        provider.GetRequiredService<DailyMenuViewModel>());
+                        provider.GetRequiredService<DailyMenuViewModel>(),
+                        provider.GetRequiredService<IAdminSession>());
                     mainViewModel.Login.LoginSucceeded += (_, _) => mainViewModel.MarkAuthenticated();
                     return mainViewModel;
                 });

@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using Kafgir.WPF.ViewModels;
 
 namespace Kafgir.WPF.Views;
@@ -48,6 +49,20 @@ public partial class LoginView : UserControl
         else
         {
             PasswordInput.Focus();
+        }
+    }
+
+    private void LoginInput_OnKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter || ViewModel?.LoginCommand is null)
+        {
+            return;
+        }
+
+        if (ViewModel.LoginCommand.CanExecute(null))
+        {
+            ViewModel.LoginCommand.Execute(null);
+            e.Handled = true;
         }
     }
 }

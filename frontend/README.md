@@ -4,6 +4,6 @@ This folder contains the React + TypeScript + Vite Telegram Mini App used by cus
 
 ```powershell
 cd .\Kafgir.MiniApp
-npm install
+npm ci
 npm run dev
 ```

@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Net.Http;
 using Kafgir.WPF.Services.Api;
+using Kafgir.WPF.Models;
 using Kafgir.Contracts.Foods;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -18,6 +19,7 @@ public sealed class FoodsViewModel : ObservableObject
     private bool _isBusy;
     private string? _errorMessage;
     private string? _successMessage;
+    private string? _foodNameSearch;
 
     public FoodsViewModel(IFoodsApiClient apiClient)
     {
@@ -27,9 +29,11 @@ public sealed class FoodsViewModel : ObservableObject
         NewFoodCommand = new RelayCommand(NewFood, () => !IsBusy);
         SaveFoodCommand = new AsyncRelayCommand(SaveFoodAsync, () => !IsBusy);
         ToggleActiveCommand = new AsyncRelayCommand(ToggleActiveAsync, () => SelectedFood is not null && !IsBusy);
+        SearchFoodsCommand = new RelayCommand(() => ApplyFoodFilter(resetPage: true));
     }
 
     public ObservableCollection<FoodDto> Foods { get; } = [];
+    public PaginationViewModel<FoodDto> FoodsPagination { get; } = new(12);
     public FoodDto? SelectedFood
     {
         get => _selectedFood;
@@ -57,12 +61,14 @@ public sealed class FoodsViewModel : ObservableObject
     }
     public string? ErrorMessage { get => _errorMessage; private set => SetProperty(ref _errorMessage, value); }
     public string? SuccessMessage { get => _successMessage; private set => SetProperty(ref _successMessage, value); }
+    public string? FoodNameSearch { get => _foodNameSearch; set => SetProperty(ref _foodNameSearch, value); }
 
     public IAsyncRelayCommand LoadFoodsCommand { get; }
     public IAsyncRelayCommand RefreshCommand { get; }
     public IRelayCommand NewFoodCommand { get; }
     public IAsyncRelayCommand SaveFoodCommand { get; }
     public IAsyncRelayCommand ToggleActiveCommand { get; }
+    public IRelayCommand SearchFoodsCommand { get; }
 
     private async Task LoadFoodsAsync() => await LoadFoodsAsync(SelectedFood?.Id);
 
@@ -76,6 +82,7 @@ public sealed class FoodsViewModel : ObservableObject
             var foods = await _apiClient.GetFoodsAsync();
             Foods.Clear();
             foreach (var food in foods) Foods.Add(food);
+            ApplyFoodFilter(resetPage: false);
             SelectedFood = selectId.HasValue ? Foods.FirstOrDefault(food => food.Id == selectId) : null;
         }
         catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException)
@@ -94,6 +101,15 @@ public sealed class FoodsViewModel : ObservableObject
         IsActive = true;
         ErrorMessage = null;
         SuccessMessage = null;
+    }
+
+    private void ApplyFoodFilter(bool resetPage)
+    {
+        var search = FoodNameSearch?.Trim();
+        var filteredFoods = string.IsNullOrWhiteSpace(search)
+            ? Foods
+            : Foods.Where(food => food.Name.Contains(search, StringComparison.CurrentCultureIgnoreCase));
+        FoodsPagination.SetItems(filteredFoods, resetPage);
     }
 
     private async Task SaveFoodAsync()

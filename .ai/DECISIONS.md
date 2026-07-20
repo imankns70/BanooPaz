@@ -2,11 +2,29 @@
 
 - The brand name is Kafgir / کفگیر and the product is built in memory of mother.
 - SQL Server is selected as the database.
-- Local development SQL Server runs in Docker on `localhost:1433` and uses explicit SQL-auth connection strings in Development settings.
+- Shared Development settings target Docker SQL Server on `localhost:1433`; machines without Docker may use `MSSQLLocalDB` through ignored per-machine overrides.
 - Per-machine SQL differences are handled through ignored `.local` appsettings overrides in API and Worker so tracked Development config can stay Docker-friendly.
+- Project documentation is kept under `.ai`, with legacy narrative docs stored in `.ai/docs/`.
 - WPF is selected for the admin application.
 - The WPF admin project lives under `backend/src/Kafgir.WPF` beside the other source projects.
+- The WPF login form supports keyboard-first sign-in, including Enter-to-submit from credential inputs.
+- Embedded WPF image resources use explicit `pack://application:,,,/` URIs to avoid runtime resource-resolution differences.
 - A Telegram Mini App is selected for the customer application.
+- The Mini App initializes through Telegram's official Web App SDK and integrates Telegram's native Back button for in-app navigation.
+- The Mini App uses the online Yekan webfont for Persian UI typography, with local system-font fallbacks for CDN failures.
+- WPF and the Mini App share one modern crisp-blue visual language: cool neutral canvas, white surfaces, slate text, cobalt primary actions, blue focus, semantic green/amber/red states, small radii, and restrained depth. Platform-specific density and interaction patterns remain separate.
+- Decorative gradients, asymmetric brand shapes, oversized seals, heavy shadows, and earthy teal/clay/gold colors are excluded from the active design system.
+- WPF uses compact operational density and shared resource styles; the Mini App uses touch-friendly sizing and responsive CSS without adding a UI package.
+- Global WPF typography styles must not set `TextBlock.Foreground`; normal text inherits the window color and contextual containers remain responsible for contrast.
+- Keep the Daily Menu readability adjustment scoped to its grid body cells rather than increasing every WPF DataGrid or its headers and operation buttons.
+- WPF grid pagination is client-side because current API endpoints return complete MVP collections; source collections remain authoritative for editing, totals, selection, and submission.
+- Without a visible Orders date picker, each Orders load explicitly targets the current local date. Food list search is limited to a case-insensitive food-name match.
+- The authenticated WPF shell provides navigation only and does not render a shared top panel; page-specific context and actions belong inside each page.
+- Shared WPF page-edge spacing belongs on the shell content host, not as duplicated margins inside individual views.
+- WPF design tokens and shared control styles belong in application resources; Mini App design tokens and responsive behavior belong in global CSS rather than being duplicated per component.
+- Customer-facing motion must remain subtle and respect `prefers-reduced-motion`; operational WPF screens prioritize immediate readability over decorative animation.
+- Mini App carts persist in browser storage but are always reconciled with the latest server menu before use.
+- Browser access to the API uses an explicit configurable CORS origin allowlist, never an unrestricted production policy.
 - The backend API is the central integration point.
 - WPF must not connect directly to SQL Server.
 - Initial sales are per portion in Andimeshk.
@@ -27,11 +45,23 @@
 - A food can appear only once in a given daily menu.
 - Existing daily menus with items cannot be cleared by an empty save; this guards against UI load failures wiping unsold items.
 - Daily-menu item creation is an immediate API operation in WPF; the full-menu save flow is reserved for editing already-loaded rows/menu metadata.
+- Daily-menu food creation and editing use a compact inline WPF form above the grid rather than a modal or separate page, while sharing the daily-menu view model and API operations.
+- Daily-menu open state and settings save stay in the top operational header for quick access, while per-food editing remains in the compact inline form above the grid.
+- The WPF Daily Menu screen manages only the current local date. Date selection, historical search, and menu-note editing are intentionally absent from this operational page; existing stored note data is retained when open-state settings are saved.
 - The Mini App reads today's menu from the public `/api/menus/today` endpoint; admin daily-menu routes are reserved for authenticated WPF/admin use.
 - Telegram WebApp user data is trusted only after backend `initData` HMAC validation succeeds.
 - ASP.NET Core Identity replaces custom user, role, and admin tables.
 - Identity uses `IdentityUser<int>` and `IdentityRole<int>`; `MustChangePassword` is not used.
 - WPF admin authentication uses API login and JWT, never direct database access. The desktop client keeps the bearer token in memory and attaches it to admin API requests.
+- WPF logout is a client-side session operation: clear the in-memory JWT and sensitive screen state, stop protected polling, and return to the login view.
+- Dashboard statistics use the Iran business date and refresh on every WPF navigation to avoid stale or timezone-shifted order counts.
+- Order status actions on the WPF orders page are presented at the bottom of the order details panel so the grid can stay focused on key columns.
+- The current WPF operation uses only Pending Confirmation, Confirmed, Delivered, and Cancelled; Preparing and Ready stay in shared contracts but are not required admin actions.
+- Orders polling refreshes the currently selected order details after replacing list summaries, keeping list and detail state synchronized.
+- The WPF orders grid includes a simple row-number column for faster scanning during daily operations.
+- The WPF orders row-number column is displayed one-based for admin readability.
+- Order status history records only real status transitions; order creation itself is not written as a pseudo-transition entry.
+- Manual-order address text is always sent into the order snapshot when provided; reusable address saving stays disabled for admin-created orders.
 - Telegram Mini App customers map to Identity users through validated Telegram `initData`; local development may fall back to raw user fields only when validation is explicitly not required.
 - Telegram-specific user/chat metadata belongs in `TelegramAccounts`, not directly in business profile records. Legacy Telegram columns on `AspNetUsers` remain for migration/backward compatibility, but new lookups and notification targets use `TelegramAccounts`.
 - Returning customer profile preload uses `POST /api/customers/me` with Telegram `initData`; it never exposes profile lookup by an unvalidated Telegram ID in production.

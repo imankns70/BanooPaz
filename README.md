@@ -16,8 +16,7 @@
 
 - `backend/`: API, application, domain, contracts, infrastructure, worker, WPF admin app, and backend tests
 - `frontend/`: Telegram Mini App
-- `docs/`: product and technical documentation
-- `.ai/`: current state, decisions, tasks, and reusable prompts
+- `.ai/`: current state, decisions, tasks, reusable prompts, and project documentation
 
 ## Build and run
 
